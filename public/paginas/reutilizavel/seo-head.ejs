@@ -4,14 +4,45 @@ const defaultDescription = 'Compre e venda veículos novos, seminovos e usados n
 const title = (typeof seo !== 'undefined' && seo.titulo) ? seo.titulo : defaultTitle;
 const description = (typeof seo !== 'undefined' && seo.descricao) ? seo.descricao : defaultDescription;
 const keywords = (typeof seo !== 'undefined' && seo.keywords) ? seo.keywords : 'comprar carro, vender carro, veículos usados, carros novos, motos usadas, temcar';
-const canonical = (typeof seo !== 'undefined' && seo.link_canonico) ? seo.link_canonico : (typeof currentUrl !== 'undefined' ? currentUrl : 'https://www.temcar.com.br/');
+
+const normalizeUrl = (url) => {
+    try {
+        const parsed = new URL(url);
+
+        let pathname = decodeURIComponent(parsed.pathname)
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/\s+/g, '-')
+            .replace(/\/+/g, '/')
+            .replace(/\/$/, '');
+
+        // remove www
+        parsed.hostname = parsed.hostname.replace(/^www\./, '');
+
+        return `${parsed.protocol}//${parsed.hostname}${pathname}`;
+
+    } catch (e) {
+        return 'https://temcar.com.br/';
+    }
+};
+
+const rawCanonical =
+    (typeof seo !== 'undefined' && seo.link_canonico)
+        ? seo.link_canonico
+        : (typeof currentUrl !== 'undefined'
+            ? currentUrl
+            : 'https://temcar.com.br/');
+
+const canonical = normalizeUrl(rawCanonical);
+
 const robots = (typeof seo !== 'undefined' && seo.robots) ? seo.robots : 'index, follow';
 const ogType = (typeof seo !== 'undefined' && seo.og_type) ? seo.og_type : 'website';
 const ogImage = (typeof seo !== 'undefined' && seo.og_image) ? seo.og_image : 'https://www.temcar.com.br/imagens/img/og-temcar.jpg';
 %>
 <title><%= title %></title>
 <meta name="description" content="<%= description %>">
-<meta name="keywords" content="<%= keywords %>">
+
 <link rel="canonical" href="<%= canonical %>">
 <meta name="robots" content="<%= robots %>">
 

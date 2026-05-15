@@ -141,7 +141,7 @@ function atualizarTituloCidade() {
     const estado = obterEstadoAtual()
 
     if (!listaFiltrada.length) {
-        titulo.textContent = `Nenhum anúncio encontrado em ${nomeCidade}, ${estado}`
+        titulo.textContent = `${nomeCidade}, ${estado}`
         return
     }
 
@@ -253,9 +253,9 @@ function renderizarCidadeSemAnuncios(container) {
             </div>
 
             <p class="cidade-empty-title">
-                Ainda não temos nenhum anúncio cadastrado em
+                Venda seu veículo em
                 <strong>${nomeCidade}${estado ? ` - ${estado}` : ""}</strong>
-                no momento.
+                
             </p>
 
             <p class="cidade-empty-promo">
