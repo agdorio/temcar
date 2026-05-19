@@ -370,4 +370,94 @@ async function getSeoRevenda(id) {
   }
 }
 
-module.exports = { getSeo, getSeoAnuncio, getSeoCidade, getSeoRevenda };
+/**
+ * SEO para páginas de veículos por região (/veiculos/:uf e /veiculos/:uf/:cidade).
+ */
+async function getSeoVeiculos({ uf, cidade } = {}) {
+  const SITE_URL_LOCAL = (process.env.SITE_URL || 'https://www.temcar.com.br').replace(/\/$/, '');
+  const ufUpper = (uf || '').toUpperCase();
+  const nomeCidade = cidade ? cidade.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : null;
+
+  if (nomeCidade && uf) {
+    const cidadeSlug = slugify(nomeCidade);
+    const ufSlug = uf.toLowerCase();
+    return makeDefaultSeo('cidade', {
+      titulo: `Veículos à Venda em ${nomeCidade}, ${ufUpper} | TemCar`,
+      descricao: `Encontre carros e motos à venda em ${nomeCidade}, ${ufUpper}. Veja ofertas de veículos novos, seminovos e usados no TemCar.`,
+      keywords: `veículos em ${nomeCidade}, carros em ${nomeCidade}, motos em ${nomeCidade}`,
+      texto_h1: `Veículos à Venda em ${nomeCidade} - ${ufUpper}`,
+      link_canonico: `${SITE_URL_LOCAL}/veiculos/${ufSlug}/${cidadeSlug}`
+    });
+  }
+
+  if (uf) {
+    return makeDefaultSeo('home', {
+      titulo: `Veículos à Venda no ${ufUpper} | TemCar`,
+      descricao: `Encontre carros e motos à venda no estado ${ufUpper}. Veja ofertas de veículos novos, seminovos e usados no TemCar.`,
+      keywords: `veículos no ${ufUpper}, carros no ${ufUpper}, motos no ${ufUpper}`,
+      texto_h1: `Veículos à Venda no ${ufUpper}`,
+      link_canonico: `${SITE_URL_LOCAL}/veiculos/${uf.toLowerCase()}`
+    });
+  }
+
+  return makeDefaultSeo('home');
+}
+
+/**
+ * SEO para páginas de bairro (/veiculos/:uf/:cidade/:bairro).
+ */
+async function getSeoBairro(bairro, cidade) {
+  const SITE_URL_LOCAL = (process.env.SITE_URL || 'https://www.temcar.com.br').replace(/\/$/, '');
+
+  if (!bairro || !cidade) return makeDefaultSeo('cidade');
+
+  const nomeBairro = bairro.nome || bairro.slug || '';
+  const nomeCidade = cidade.nome || '';
+  const uf = (cidade.estado || '').toUpperCase();
+  const ufSlug = (cidade.estado || '').toLowerCase();
+  const cidadeSlug = slugify(nomeCidade);
+  const bairroSlug = bairro.slug || slugify(nomeBairro);
+
+  const fallbackSeo = makeDefaultSeo('cidade', {
+    titulo: `Veículos em ${nomeBairro}, ${nomeCidade} - ${uf} | TemCar`,
+    descricao: `Encontre veículos à venda no bairro ${nomeBairro} em ${nomeCidade} - ${uf} na TemCar. Confira carros, motos e utilitários disponíveis na região.`,
+    keywords: `veículos em ${nomeBairro}, carros em ${nomeBairro}, motos em ${nomeBairro}, ${nomeCidade}`,
+    texto_h1: `Veículos em ${nomeBairro}, ${nomeCidade} - ${uf}`,
+    link_canonico: `${SITE_URL_LOCAL}/veiculos/${ufSlug}/${cidadeSlug}/${bairroSlug}`
+  });
+
+  try {
+    const [[seo]] = await db.query(`
+      SELECT * FROM seo_templates
+      WHERE pagina = 'bairro' AND ativo = true
+      LIMIT 1
+    `);
+
+    if (!seo) return fallbackSeo;
+
+    const substituir = (texto) => {
+      if (!texto) return '';
+      return texto
+        .replace(/#bairro/g, nomeBairro)
+        .replace(/#cidade/g, nomeCidade)
+        .replace(/#estado/g, uf);
+    };
+
+    return {
+      titulo: substituir(seo.titulo) || fallbackSeo.titulo,
+      descricao: substituir(seo.descricao) || fallbackSeo.descricao,
+      keywords: substituir(seo.keywords) || fallbackSeo.keywords,
+      texto_h1: substituir(seo.texto_h1) || fallbackSeo.texto_h1,
+      texto_conteudo: substituir(seo.texto_conteudo) || fallbackSeo.texto_conteudo,
+      link_canonico: substituir(seo.link_canonico) || fallbackSeo.link_canonico,
+      og_type: 'website',
+      og_image: fallbackSeo.og_image,
+      robots: 'index, follow'
+    };
+  } catch (error) {
+    console.error('Erro ao buscar SEO do bairro', nomeBairro, error);
+    return fallbackSeo;
+  }
+}
+
+module.exports = { getSeo, getSeoAnuncio, getSeoCidade, getSeoRevenda, getSeoVeiculos, getSeoBairro };

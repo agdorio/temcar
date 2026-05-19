@@ -1578,6 +1578,95 @@ router.put(
   }
 );
 
+// =========================================================
+// CRUD BAIRROS (admin)
+// =========================================================
+
+router.get("/api/admin/bairros", checkAuth('private'), async (req, res) => {
+  try {
+    const { cidade_id } = req.query;
+    let sql = `
+      SELECT b.id, b.nome, b.slug, b.cidade_id,
+             c.nome AS cidade_nome, c.estado AS cidade_estado
+      FROM bairros b
+      INNER JOIN cidades c ON c.id = b.cidade_id
+    `;
+    const params = [];
+    if (cidade_id) {
+      sql += ' WHERE b.cidade_id = ?';
+      params.push(cidade_id);
+    }
+    sql += ' ORDER BY b.nome ASC';
+    const [bairros] = await db.query(sql, params);
+    res.json(bairros);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ message: "Erro interno" });
+  }
+});
+
+router.post("/api/admin/bairros", checkAuth('private'), async (req, res) => {
+  try {
+    const { nome, cidade_id } = req.body;
+    if (!nome || !cidade_id) {
+      return res.status(400).json({ message: "Nome e cidade são obrigatórios" });
+    }
+
+    const slug = nome
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+
+    const [result] = await db.query(
+      "INSERT INTO bairros (nome, slug, cidade_id) VALUES (?, ?, ?)",
+      [nome, slug, cidade_id]
+    );
+    res.json({ id: result.insertId, message: "Bairro cadastrado com sucesso" });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ message: "Erro interno" });
+  }
+});
+
+router.put("/api/admin/bairros/:id", checkAuth('private'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { nome, cidade_id } = req.body;
+
+    if (!nome || !cidade_id) {
+      return res.status(400).json({ message: "Nome e cidade são obrigatórios" });
+    }
+
+    const slug = nome
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+
+    await db.query(
+      "UPDATE bairros SET nome = ?, slug = ?, cidade_id = ? WHERE id = ?",
+      [nome, slug, cidade_id, id]
+    );
+    res.json({ message: "Bairro atualizado com sucesso" });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ message: "Erro interno" });
+  }
+});
+
+router.delete("/api/admin/bairros/:id", checkAuth('private'), async (req, res) => {
+  try {
+    await db.query("DELETE FROM bairros WHERE id = ?", [req.params.id]);
+    res.json({ message: "Bairro excluído com sucesso" });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ message: "Erro interno" });
+  }
+});
+
 router.delete("/api/cidades/:id", async (req, res) => {
   try {
     const { id } = req.params;

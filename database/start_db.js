@@ -342,8 +342,51 @@ CREATE TABLE IF NOT EXISTS cidades (
 
 await db.query(criarTabelaCidades);
 
+        const criarTabelaBairros = `
+CREATE TABLE IF NOT EXISTS bairros (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nome VARCHAR(150) NOT NULL,
+    slug VARCHAR(150) NOT NULL,
+    cidade_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_bairro_cidade
+        FOREIGN KEY (cidade_id)
+        REFERENCES cidades(id)
+        ON DELETE CASCADE,
+    INDEX idx_bairros_slug (slug),
+    INDEX idx_bairros_cidade_id (cidade_id)
+);
+`;
+        await db.query(criarTabelaBairros);
 
+        const criarTabelaAnunciosCidades = `
+CREATE TABLE IF NOT EXISTS anuncios_cidades (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    anuncio_id INT NOT NULL,
+    cidade VARCHAR(150) NOT NULL,
+    estado VARCHAR(2) NOT NULL,
+    CONSTRAINT fk_ac_anuncio
+        FOREIGN KEY (anuncio_id)
+        REFERENCES anuncios(id)
+        ON DELETE CASCADE,
+    INDEX idx_ac_anuncio_id (anuncio_id)
+);
+`;
+        await db.query(criarTabelaAnunciosCidades);
 
+        const criarTabelaBanners = `
+CREATE TABLE IF NOT EXISTS banners (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    titulo VARCHAR(150),
+    imagem VARCHAR(255) NOT NULL,
+    link VARCHAR(255),
+    ordem INT DEFAULT 0,
+    ativo BOOLEAN DEFAULT true,
+    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+`;
+        await db.query(criarTabelaBanners);
 
         const saltRounds = 10;
         const hashedSenha = await bcrypt.hash(PRIMARY_PASSWORD, saltRounds);

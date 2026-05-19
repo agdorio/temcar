@@ -166,6 +166,10 @@
             Cidades
           </button>
 
+          <button class="painel-link" data-target="bairros">
+            Bairros
+          </button>
+
           <button class="painel-link" data-target="banners">
             Banners
           </button>
@@ -668,6 +672,251 @@ formCadastrar.addEventListener("submit", async (e) => {
 
 // init
 carregarCidades();
+        </script>
+      </div>
+
+      <!-- BAIRROS -->
+      <div class="painel-content" id="bairros">
+        <section class="container mt-4">
+
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3>Bairros</h3>
+            <button class="btn btn-primary" id="btn-mostrar-cadastro-bairro">
+              + Novo Bairro
+            </button>
+          </div>
+
+          <!-- Select de cidade para filtrar bairros (Select2) -->
+          <div class="mb-4">
+            <label class="form-label fw-bold">Filtrar por cidade</label>
+            <select id="select-cidade-bairro" class="form-select" style="max-width:400px;">
+              <option value="">Selecione uma cidade para ver os bairros</option>
+            </select>
+          </div>
+
+          <!-- Tabela de bairros -->
+          <div id="box-lista-bairros" class="mb-4">
+            <p class="text-muted">Selecione uma cidade para ver seus bairros.</p>
+          </div>
+
+          <!-- Formulário de cadastro -->
+          <div id="box-cadastrar-bairro" class="card p-3 d-none">
+            <h5>Novo Bairro</h5>
+
+            <form id="form-cadastrar-bairro">
+              <div class="mb-3">
+                <label class="form-label">Nome do Bairro *</label>
+                <input class="form-control" type="text" name="nome" placeholder="Ex: Centro" required />
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Cidade *</label>
+                <select id="select-cidade-novo-bairro" name="cidade_id" class="form-select" required>
+                  <option value="">Selecione a cidade</option>
+                </select>
+              </div>
+
+              <div class="d-flex gap-2">
+                <button class="btn btn-primary" type="submit">Cadastrar</button>
+                <button class="btn btn-secondary" type="button" id="btn-cancelar-cadastro-bairro">Cancelar</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Formulário de edição -->
+          <div id="box-editar-bairro" class="card p-3 mb-4 d-none">
+            <h5>Editar Bairro</h5>
+
+            <form id="form-editar-bairro">
+              <input type="hidden" id="bairro-edit-id" />
+
+              <div class="mb-3">
+                <label class="form-label">Nome do Bairro *</label>
+                <input class="form-control" type="text" id="bairro-edit-nome" required />
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Cidade *</label>
+                <select id="select-cidade-editar-bairro" class="form-select" required>
+                  <option value="">Selecione a cidade</option>
+                </select>
+              </div>
+
+              <div class="d-flex gap-2">
+                <button class="btn btn-success" type="submit">Salvar</button>
+                <button class="btn btn-secondary" type="button" id="btn-cancelar-editar-bairro">Cancelar</button>
+              </div>
+            </form>
+          </div>
+
+        </section>
+
+        <script>
+        let cidadesParaBairros = [];
+        let bairroSelecionadoCidadeId = null;
+
+        async function carregarCidadesParaBairros() {
+          const res = await fetch('/api/cidades');
+          cidadesParaBairros = await res.json();
+
+          const selects = [
+            document.getElementById('select-cidade-bairro'),
+            document.getElementById('select-cidade-novo-bairro'),
+            document.getElementById('select-cidade-editar-bairro')
+          ];
+
+          selects.forEach(sel => {
+            if (!sel) return;
+            const firstOption = sel.options[0];
+            sel.innerHTML = '';
+            sel.appendChild(firstOption);
+
+            cidadesParaBairros.forEach(c => {
+              const opt = document.createElement('option');
+              opt.value = c.id;
+              opt.textContent = `${c.nome} - ${c.estado}`;
+              sel.appendChild(opt);
+            });
+          });
+        }
+
+        async function carregarBairrosDaCidade(cidadeId) {
+          const box = document.getElementById('box-lista-bairros');
+          if (!cidadeId) {
+            box.innerHTML = '<p class="text-muted">Selecione uma cidade para ver seus bairros.</p>';
+            return;
+          }
+
+          const res = await fetch(`/api/admin/bairros?cidade_id=${cidadeId}`);
+          const bairros = await res.json();
+
+          if (!bairros.length) {
+            box.innerHTML = '<p class="text-muted">Nenhum bairro cadastrado para esta cidade.</p>';
+            return;
+          }
+
+          let html = `
+            <div class="table-responsive">
+              <table class="table table-striped align-middle">
+                <thead>
+                  <tr>
+                    <th>Nome</th>
+                    <th>Slug</th>
+                    <th>URL</th>
+                    <th style="width:130px">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+          `;
+
+          bairros.forEach(b => {
+            const cidadeSlug = (b.cidade_nome || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+            const uf = (b.cidade_estado || '').toLowerCase();
+            const url = `/veiculos/${uf}/${cidadeSlug}/${b.slug}`;
+            html += `
+              <tr>
+                <td><strong>${b.nome}</strong></td>
+                <td><code>${b.slug}</code></td>
+                <td><a href="${url}" target="_blank" class="small text-truncate d-block" style="max-width:220px">${url}</a></td>
+                <td>
+                  <button class="btn btn-sm btn-warning me-1" onclick='abrirEditarBairro(${JSON.stringify(b)})'>Editar</button>
+                  <button class="btn btn-sm btn-danger" onclick="excluirBairro(${b.id}, ${b.cidade_id})">Excluir</button>
+                </td>
+              </tr>
+            `;
+          });
+
+          html += '</tbody></table></div>';
+          box.innerHTML = html;
+        }
+
+        function abrirEditarBairro(bairro) {
+          document.getElementById('bairro-edit-id').value = bairro.id;
+          document.getElementById('bairro-edit-nome').value = bairro.nome;
+          document.getElementById('select-cidade-editar-bairro').value = bairro.cidade_id;
+          document.getElementById('box-editar-bairro').classList.remove('d-none');
+          document.getElementById('box-cadastrar-bairro').classList.add('d-none');
+        }
+
+        async function excluirBairro(id, cidadeId) {
+          if (!confirm('Excluir este bairro?')) return;
+          await fetch(`/api/admin/bairros/${id}`, { method: 'DELETE' });
+          carregarBairrosDaCidade(cidadeId || bairroSelecionadoCidadeId);
+        }
+
+        document.getElementById('select-cidade-bairro').addEventListener('change', function() {
+          bairroSelecionadoCidadeId = this.value;
+          document.getElementById('box-editar-bairro').classList.add('d-none');
+          document.getElementById('box-cadastrar-bairro').classList.add('d-none');
+          carregarBairrosDaCidade(this.value);
+        });
+
+        document.getElementById('btn-mostrar-cadastro-bairro').addEventListener('click', () => {
+          document.getElementById('box-cadastrar-bairro').classList.remove('d-none');
+          document.getElementById('box-editar-bairro').classList.add('d-none');
+          document.getElementById('form-cadastrar-bairro').reset();
+          if (bairroSelecionadoCidadeId) {
+            document.getElementById('select-cidade-novo-bairro').value = bairroSelecionadoCidadeId;
+          }
+        });
+
+        document.getElementById('btn-cancelar-cadastro-bairro').addEventListener('click', () => {
+          document.getElementById('box-cadastrar-bairro').classList.add('d-none');
+        });
+
+        document.getElementById('btn-cancelar-editar-bairro').addEventListener('click', () => {
+          document.getElementById('box-editar-bairro').classList.add('d-none');
+        });
+
+        document.getElementById('form-cadastrar-bairro').addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const nome = e.target.nome.value.trim();
+          const cidade_id = e.target.cidade_id.value;
+
+          if (!nome || !cidade_id) {
+            alert('Preencha todos os campos obrigatórios');
+            return;
+          }
+
+          const res = await fetch('/api/admin/bairros', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nome, cidade_id })
+          });
+
+          const dados = await res.json();
+          alert(dados.message);
+
+          e.target.reset();
+          document.getElementById('box-cadastrar-bairro').classList.add('d-none');
+          carregarBairrosDaCidade(bairroSelecionadoCidadeId || cidade_id);
+        });
+
+        document.getElementById('form-editar-bairro').addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const id = document.getElementById('bairro-edit-id').value;
+          const nome = document.getElementById('bairro-edit-nome').value.trim();
+          const cidade_id = document.getElementById('select-cidade-editar-bairro').value;
+
+          if (!nome || !cidade_id) {
+            alert('Preencha todos os campos obrigatórios');
+            return;
+          }
+
+          const res = await fetch(`/api/admin/bairros/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nome, cidade_id })
+          });
+
+          const dados = await res.json();
+          alert(dados.message);
+
+          document.getElementById('box-editar-bairro').classList.add('d-none');
+          carregarBairrosDaCidade(bairroSelecionadoCidadeId || cidade_id);
+        });
+
+        carregarCidadesParaBairros();
         </script>
       </div>
 

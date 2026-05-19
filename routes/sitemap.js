@@ -35,23 +35,51 @@ router.get('/sitemap.xml', async (req, res) => {
       { loc: '/vender', priority: '0.7', changefreq: 'monthly', lastmod: hoje },
     ];
 
-    // Cidades dinâmicas (cidade + carros/motos por cidade)
+    function slugifyLocal(texto) {
+      return (texto || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+    }
+
+    // Cidades dinâmicas (cidade + carros/motos por cidade + /veiculos/)
     let cidadesUrls = [];
     try {
       const [cidades] = await db.query(`SELECT nome, estado FROM cidades`);
       cidades.forEach(c => {
-        const slug = c.nome
-          .toLowerCase()
-          .normalize('NFD')
-          .replace(/[\u0300-\u036f]/g, '')
-          .replace(/\s+/g, '-');
+        const slug = slugifyLocal(c.nome);
         const uf = c.estado.toLowerCase();
         cidadesUrls.push({ loc: `/cidade/${slug}/${uf}`, priority: '0.6', changefreq: 'daily', lastmod: hoje });
+        cidadesUrls.push({ loc: `/veiculos/${uf}/${slug}`, priority: '0.7', changefreq: 'daily', lastmod: hoje });
         cidadesUrls.push({ loc: `/carros/${slug}/${uf}`, priority: '0.6', changefreq: 'daily', lastmod: hoje });
         cidadesUrls.push({ loc: `/motos/${slug}/${uf}`, priority: '0.5', changefreq: 'daily', lastmod: hoje });
       });
     } catch (e) {
       console.error('Sitemap: erro ao buscar cidades', e);
+    }
+
+    // Bairros dinâmicos
+    let bairrosUrls = [];
+    try {
+      const [bairros] = await db.query(`
+        SELECT b.slug AS bairro_slug, c.nome AS cidade_nome, c.estado
+        FROM bairros b
+        INNER JOIN cidades c ON c.id = b.cidade_id
+      `);
+      bairros.forEach(b => {
+        const cidadeSlug = slugifyLocal(b.cidade_nome);
+        const uf = b.estado.toLowerCase();
+        bairrosUrls.push({
+          loc: `/veiculos/${uf}/${cidadeSlug}/${b.bairro_slug}`,
+          priority: '0.7',
+          changefreq: 'daily',
+          lastmod: hoje
+        });
+      });
+    } catch (e) {
+      console.error('Sitemap: erro ao buscar bairros', e);
     }
 
     // Revendas dinâmicas
@@ -88,7 +116,7 @@ router.get('/sitemap.xml', async (req, res) => {
       console.error('Sitemap: erro ao buscar anúncios', e);
     }
 
-    const todas = [...paginasEstaticas, ...cidadesUrls, ...revendasUrls, ...anunciosUrls];
+    const todas = [...paginasEstaticas, ...cidadesUrls, ...bairrosUrls, ...revendasUrls, ...anunciosUrls];
 
     let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
     xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
