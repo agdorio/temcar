@@ -11,20 +11,18 @@ function slugify(texto) {
     .replace(/\s+/g, "-");
 }
 
-// Rota nova: /cidade/:slug/:uf (ex: /cidade/mesquita/rj)
+function capitalize(texto) {
+  return (texto || '').replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+}
+
+// ── /cidade/:slug/:uf (rota original) ──
 router.get("/cidade/:slug/:uf", async (req, res) => {
   const { slug, uf } = req.params;
-
   const [cidades] = await db.query(`SELECT * FROM cidades`);
-
-  const cidade = cidades.find(c => {
-    return slugify(c.nome) === slug && c.estado.toLowerCase() === uf.toLowerCase();
-  });
-
-  if (!cidade) {
-    return res.status(404).send("Cidade não encontrada");
-  }
-
+  const cidade = cidades.find(c =>
+    slugify(c.nome) === slug && c.estado.toLowerCase() === uf.toLowerCase()
+  );
+  if (!cidade) return res.status(404).send("Cidade não encontrada");
   const seo = await getSeoCidade(cidade);
   const breadcrumbs = [
     { name: 'Home', url: 'https://www.temcar.com.br/' },
@@ -34,38 +32,95 @@ router.get("/cidade/:slug/:uf", async (req, res) => {
   res.render("cidade", { cidade, seo, breadcrumbs });
 });
 
+// ── /veiculos/:estado/:cidade/:bairro ──
+router.get("/veiculos/:estado/:cidade/:bairro", async (req, res) => {
+  const { estado, cidade, bairro } = req.params;
+  const nomeBairro  = capitalize(bairro);
+  const nomeCidade  = capitalize(cidade);
+  const ufUpper     = estado.toUpperCase();
+
+  const seo = {
+    titulo: `Veículos em ${nomeBairro}, ${nomeCidade} - ${ufUpper} | TemCar`,
+    descricao: `Compre e venda veículos no bairro ${nomeBairro}, ${nomeCidade} - ${ufUpper}. Encontre carros e motos perto de você no TemCar.`,
+    keywords: `veículos ${nomeBairro}, carros ${nomeBairro}, ${nomeCidade}, ${ufUpper}`,
+    texto_h1: `Veículos em ${nomeBairro} — ${nomeCidade}`,
+    link_canonico: `https://www.temcar.com.br/veiculos/${estado}/${cidade}/${bairro}`
+  };
+  const breadcrumbs = [
+    { name: 'Home', url: 'https://www.temcar.com.br/' },
+    { name: 'Cidades', url: 'https://www.temcar.com.br/buscar-cidades' },
+    { name: `${nomeCidade} - ${ufUpper}`, url: `https://www.temcar.com.br/cidade/${cidade}/${estado}` },
+    { name: nomeBairro, url: `https://www.temcar.com.br/veiculos/${estado}/${cidade}/${bairro}` }
+  ];
+  res.render("cidade", {
+    cidade: { nome: nomeBairro, estado: ufUpper, imagem: null },
+    seo, breadcrumbs
+  });
+});
+
+// ── /veiculos/:estado/:cidade ──
+router.get("/veiculos/:estado/:cidade", async (req, res) => {
+  const { estado, cidade } = req.params;
+  const nomeCidade = capitalize(cidade);
+  const ufUpper    = estado.toUpperCase();
+
+  const seo = {
+    titulo: `Veículos em ${nomeCidade} - ${ufUpper} | TemCar`,
+    descricao: `Compre e venda veículos em ${nomeCidade} - ${ufUpper}. Encontre carros e motos no TemCar.`,
+    keywords: `veículos ${nomeCidade}, carros ${nomeCidade}, ${ufUpper}`,
+    texto_h1: `Veículos em ${nomeCidade} - ${ufUpper}`,
+    link_canonico: `https://www.temcar.com.br/veiculos/${estado}/${cidade}`
+  };
+  const breadcrumbs = [
+    { name: 'Home', url: 'https://www.temcar.com.br/' },
+    { name: 'Cidades', url: 'https://www.temcar.com.br/buscar-cidades' },
+    { name: `${nomeCidade} - ${ufUpper}`, url: `https://www.temcar.com.br/veiculos/${estado}/${cidade}` }
+  ];
+  res.render("cidade", {
+    cidade: { nome: nomeCidade, estado: ufUpper, imagem: null },
+    seo, breadcrumbs
+  });
+});
+
+// ── /veiculos/:estado ──
+router.get("/veiculos/:estado", async (req, res) => {
+  const { estado } = req.params;
+  const ufUpper = estado.toUpperCase();
+
+  const seo = {
+    titulo: `Veículos em ${ufUpper} | TemCar`,
+    descricao: `Compre e venda veículos no estado ${ufUpper}. Encontre carros e motos no TemCar.`,
+    keywords: `veículos ${ufUpper}, carros ${ufUpper}`,
+    texto_h1: `Veículos em ${ufUpper}`,
+    link_canonico: `https://www.temcar.com.br/veiculos/${estado}`
+  };
+  const breadcrumbs = [
+    { name: 'Home', url: 'https://www.temcar.com.br/' },
+    { name: `Veículos - ${ufUpper}`, url: `https://www.temcar.com.br/veiculos/${estado}` }
+  ];
+  res.render("cidade", {
+    cidade: { nome: ufUpper, estado: ufUpper, imagem: null },
+    seo, breadcrumbs
+  });
+});
+
+// ── API banners da cidade ──
 router.get("/api/cidades/:slug/:uf/banners", async (req, res) => {
   try {
     const { slug, uf } = req.params;
     const [cidades] = await db.query(`SELECT * FROM cidades`);
-
-    const cidade = cidades.find(c => {
-      return slugify(c.nome) === slug && c.estado.toLowerCase() === uf.toLowerCase();
-    });
-
-    if (!cidade) {
-      return res.status(404).json({ message: "Cidade não encontrada" });
-    }
-
-    const [banners] = await db.query(`
-      SELECT id, imagem
-      FROM regioes_imagens
-      WHERE cidade = ?
-      ORDER BY id ASC
-    `, [cidade.nome]);
-
-    const imagens = banners.map(banner => ({
-      id: banner.id,
-      imagem: `/uploads/anuncios/${banner.imagem}`
-    }));
-
+    const cidade = cidades.find(c =>
+      slugify(c.nome) === slug && c.estado.toLowerCase() === uf.toLowerCase()
+    );
+    if (!cidade) return res.status(404).json({ message: "Cidade não encontrada" });
+    const [banners] = await db.query(
+      `SELECT id, imagem FROM regioes_imagens WHERE cidade = ? ORDER BY id ASC`,
+      [cidade.nome]
+    );
+    const imagens = banners.map(b => ({ id: b.id, imagem: `/uploads/anuncios/${b.imagem}` }));
     if (!imagens.length && cidade.imagem) {
-      imagens.push({
-        id: `cidade-${cidade.id}`,
-        imagem: cidade.imagem
-      });
+      imagens.push({ id: `cidade-${cidade.id}`, imagem: cidade.imagem });
     }
-
     res.json(imagens);
   } catch (error) {
     console.error("Erro ao buscar banners da cidade:", error);
@@ -73,20 +128,13 @@ router.get("/api/cidades/:slug/:uf/banners", async (req, res) => {
   }
 });
 
-// Rota antiga: /cidade/:slug → redireciona 301 para /cidade/:slug/:uf
+// ── Rota antiga: /cidade/:slug → redirect 301 ──
 router.get("/cidade/:slug", async (req, res) => {
   const { slug } = req.params;
-
   const [cidades] = await db.query(`SELECT * FROM cidades`);
-
   const cidade = cidades.find(c => slugify(c.nome) === slug);
-
-  if (!cidade) {
-    return res.status(404).send("Cidade não encontrada");
-  }
-
-  const uf = cidade.estado.toLowerCase();
-  res.redirect(301, `/cidade/${slug}/${uf}`);
+  if (!cidade) return res.status(404).send("Cidade não encontrada");
+  res.redirect(301, `/cidade/${slug}/${cidade.estado.toLowerCase()}`);
 });
 
 module.exports = router;

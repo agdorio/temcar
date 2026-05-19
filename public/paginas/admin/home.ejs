@@ -16,6 +16,11 @@
   <link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" rel="stylesheet">
   <link href="https://npmcdn.com/flatpickr/dist/themes/material_blue.css" rel="stylesheet">
 
+  <!-- Select2 — busca nas listas de cidades e bairros -->
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
   <link rel="stylesheet" href="./../../css/dashboard.css">
   <link rel="stylesheet" href="./../../css/mobile.css">
 </head>
@@ -113,7 +118,6 @@
   .descricao-card {
     display: -webkit-box;
     -webkit-line-clamp: 1;
-    /* número de linhas */
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
@@ -164,6 +168,11 @@
 
           <button class="painel-link" data-target="cidades">
             Cidades
+          </button>
+
+          <!-- ✅ NOVA ABA BAIRROS -->
+          <button class="painel-link" data-target="bairros">
+            Bairros
           </button>
 
           <button class="painel-link" data-target="banners">
@@ -385,56 +394,39 @@
           <script>
             let paginaAtual = null;
 
-
             document.getElementById('paginaSelecionada').addEventListener('change', function () {
               paginaAtual = this.value;
               resetFormSeo();
               carregarSeoDaPagina();
             });
 
-
             async function carregarSeoDaPagina() {
               if (!paginaAtual) return;
-
               const res = await fetch(`/api/seo-templates/pagina/${paginaAtual}`);
               const dados = await res.json();
-
               const tbody = document.getElementById('tabelaSeo');
               tbody.innerHTML = '';
-
               if (!dados.length) {
                 tbody.innerHTML = `<tr><td colspan="3">Nenhum SEO cadastrado</td></tr>`;
                 return;
               }
-
               dados.forEach(item => {
                 tbody.innerHTML += `
             <tr>
                 <td>${item.titulo}</td>
-                <td>${item.ativo
-                    ? '<span class="badge bg-success">Ativo</span>'
-                    : '<span class="badge bg-secondary">Inativo</span>'
-                  }</td>
+                <td>${item.ativo ? '<span class="badge bg-success">Ativo</span>' : '<span class="badge bg-secondary">Inativo</span>'}</td>
                 <td>
                     <button class="btn btn-sm btn-warning" onclick='editarSeo(${JSON.stringify(item)})'>Editar</button>
                     <button class="btn btn-sm btn-danger" onclick="excluirSeo(${item.id})">Excluir</button>
                 </td>
-            </tr>
-        `;
+            </tr>`;
               });
             }
 
-
             document.getElementById('formSeo').addEventListener('submit', async (e) => {
               e.preventDefault();
-
-              if (!paginaAtual) {
-                alert('Selecione uma página primeiro');
-                return;
-              }
-
+              if (!paginaAtual) { alert('Selecione uma página primeiro'); return; }
               const id = document.getElementById('seoId').value;
-
               const dados = {
                 pagina: paginaAtual,
                 titulo: document.getElementById('titulo').value,
@@ -445,20 +437,12 @@
                 link_canonico: document.getElementById('link_canonico').value,
                 ativo: document.getElementById('ativo').checked
               };
-
               const metodo = id ? 'PUT' : 'POST';
               const url = id ? `/api/seo-templates/${id}` : '/api/seo-templates';
-
-              await fetch(url, {
-                method: metodo,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(dados)
-              });
-
+              await fetch(url, { method: metodo, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dados) });
               resetFormSeo();
               carregarSeoDaPagina();
             });
-
 
             function editarSeo(item) {
               document.getElementById('seoId').value = item.id;
@@ -471,13 +455,11 @@
               document.getElementById('ativo').checked = item.ativo;
             }
 
-
             async function excluirSeo(id) {
               if (!confirm('Excluir SEO desta página?')) return;
               await fetch(`/api/seo-templates/${id}`, { method: 'DELETE' });
               carregarSeoDaPagina();
             }
-
 
             function resetFormSeo() {
               document.getElementById('formSeo').reset();
@@ -489,10 +471,12 @@
 
       </div>
 
+      <!-- ============================= -->
+      <!-- ABA CIDADES (original)        -->
+      <!-- ============================= -->
       <div class="painel-content" id="cidades">
         <section class="container mt-4">
 
-          <!-- TOPO -->
           <div class="d-flex justify-content-between align-items-center mb-3">
             <h3>Cidades</h3>
             <button class="btn btn-primary" id="btn-mostrar-cadastro">
@@ -500,28 +484,21 @@
             </button>
           </div>
 
-          <!-- SELECT -->
           <div class="mb-4">
             <label class="form-label">Selecionar cidade</label>
-            <select id="select-cidades" class="form-select">
+            <select id="select-cidades" class="form-select s2-cidades" style="width:100%">
               <option value="">Selecione uma cidade</option>
             </select>
           </div>
 
-          <!-- ✏️ EDITAR -->
           <div id="box-editar" class="card p-3 mb-4 d-none">
             <h5>Editar Cidade</h5>
-
             <form id="form-editar-cidade" enctype="multipart/form-data">
               <input class="form-control mb-2" type="text" name="nome" placeholder="Nome" />
               <input class="form-control mb-2" type="text" name="estado" placeholder="Estado" />
-
               <input class="form-control mb-2" type="file" name="imagem" />
-
               <img id="preview-imagem" class="mb-2" style="width:120px; display:none;" />
-
               <textarea class="form-control mb-2" name="descricao"></textarea>
-
               <div class="d-flex gap-2">
                 <button class="btn btn-success" type="submit">Salvar</button>
                 <button class="btn btn-danger" type="button" id="btn-excluir">Excluir</button>
@@ -529,16 +506,13 @@
             </form>
           </div>
 
-          <!-- ➕ CADASTRAR -->
           <div id="box-cadastrar" class="card p-3 d-none">
             <h5>Nova Cidade</h5>
-
             <form id="form-cadastrar-cidade" enctype="multipart/form-data">
               <input class="form-control mb-2" type="text" name="nome" placeholder="Nome" required />
               <input class="form-control mb-2" type="text" name="estado" placeholder="Estado" required />
               <input class="form-control mb-2" type="file" name="imagem" />
               <textarea class="form-control mb-2" name="descricao"></textarea>
-
               <button class="btn btn-primary" type="submit">Cadastrar</button>
             </form>
           </div>
@@ -547,127 +521,530 @@
 
         <script>
         const select = document.getElementById("select-cidades");
-const boxEditar = document.getElementById("box-editar");
-const boxCadastrar = document.getElementById("box-cadastrar");
-const btnMostrarCadastro = document.getElementById("btn-mostrar-cadastro");
+        const boxEditar = document.getElementById("box-editar");
+        const boxCadastrar = document.getElementById("box-cadastrar");
+        const btnMostrarCadastro = document.getElementById("btn-mostrar-cadastro");
+        const formEditar = document.getElementById("form-editar-cidade");
+        const formCadastrar = document.getElementById("form-cadastrar-cidade");
+        const preview = document.getElementById("preview-imagem");
+        const btnExcluir = document.getElementById("btn-excluir");
 
-const formEditar = document.getElementById("form-editar-cidade");
-const formCadastrar = document.getElementById("form-cadastrar-cidade");
-const preview = document.getElementById("preview-imagem");
-const btnExcluir = document.getElementById("btn-excluir");
+        let cidadeSelecionada = null;
 
-let cidadeSelecionada = null;
+        async function carregarCidades() {
+          const res = await fetch("/api/cidades");
+          const cidades = await res.json();
+          select.innerHTML = `<option value="">Selecione uma cidade</option>`;
+          cidades.forEach(cidade => {
+            const option = document.createElement("option");
+            option.value = cidade.id;
+            option.textContent = `${cidade.nome} - ${cidade.estado}`;
+            option.dataset.cidade = JSON.stringify(cidade);
+            select.appendChild(option);
+          });
+        }
 
-// 🔄 carregar cidades
-async function carregarCidades() {
-  const res = await fetch("/api/cidades");
-  const cidades = await res.json();
+        select.addEventListener("change", () => {
+          const selected = select.options[select.selectedIndex];
+          if (!selected.value) { boxEditar.classList.add("d-none"); cidadeSelecionada = null; return; }
+          cidadeSelecionada = JSON.parse(selected.dataset.cidade);
+          boxEditar.classList.remove("d-none");
+          boxCadastrar.classList.add("d-none");
+          formEditar.nome.value = cidadeSelecionada.nome;
+          formEditar.estado.value = cidadeSelecionada.estado;
+          formEditar.descricao.value = cidadeSelecionada.descricao;
+          if (cidadeSelecionada.imagem) { preview.src = cidadeSelecionada.imagem; preview.style.display = "block"; }
+          else { preview.style.display = "none"; }
+        });
 
-  select.innerHTML = `<option value="">Selecione uma cidade</option>`;
+        btnMostrarCadastro.addEventListener("click", () => {
+          boxCadastrar.classList.remove("d-none");
+          boxEditar.classList.add("d-none");
+          select.value = "";
+          cidadeSelecionada = null;
+        });
 
-  cidades.forEach(cidade => {
-    const option = document.createElement("option");
-    option.value = cidade.id;
-    option.textContent = `${cidade.nome} - ${cidade.estado}`;
-    option.dataset.cidade = JSON.stringify(cidade);
-    select.appendChild(option);
-  });
-}
+        formEditar.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          if (!cidadeSelecionada) return;
+          const formData = new FormData(formEditar);
+          await fetch(`/api/cidades/${cidadeSelecionada.id}`, { method: "PUT", body: formData });
+          alert("Atualizado!");
+          carregarCidades();
+        });
 
-// 📌 selecionar cidade
-select.addEventListener("change", () => {
-  const selected = select.options[select.selectedIndex];
+        btnExcluir.addEventListener("click", async () => {
+          if (!cidadeSelecionada) return;
+          if (!confirm("Excluir cidade?")) return;
+          await fetch(`/api/cidades/${cidadeSelecionada.id}`, { method: "DELETE" });
+          boxEditar.classList.add("d-none");
+          cidadeSelecionada = null;
+          carregarCidades();
+        });
 
-  if (!selected.value) {
-    boxEditar.classList.add("d-none");
-    cidadeSelecionada = null;
-    return;
-  }
+        formCadastrar.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const formData = new FormData(formCadastrar);
+          await fetch("/api/cidades", { method: "POST", body: formData });
+          alert("Cadastrado!");
+          formCadastrar.reset();
+          boxCadastrar.classList.add("d-none");
+          carregarCidades();
+        });
 
-  cidadeSelecionada = JSON.parse(selected.dataset.cidade);
+        carregarCidades();
+        </script>
+      </div>
 
-  // mostra edição
-  boxEditar.classList.remove("d-none");
+      <!-- ============================= -->
+      <!-- ✅ ABA BAIRROS (NOVA)         -->
+      <!-- ============================= -->
+      <div class="painel-content" id="bairros">
+        <section class="container mt-4">
 
-  // esconde cadastro
-  boxCadastrar.classList.add("d-none");
+          <!-- TOPO -->
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3>Bairros</h3>
+            <button class="btn btn-primary" id="btn-mostrar-cadastro-bairro">
+              + Novo Bairro
+            </button>
+          </div>
 
-  formEditar.nome.value = cidadeSelecionada.nome;
-  formEditar.estado.value = cidadeSelecionada.estado;
-  formEditar.descricao.value = cidadeSelecionada.descricao;
+          <!-- SELECT DE CIDADES para filtrar bairros -->
+          <div class="mb-3">
+            <label class="form-label">Filtrar por cidade</label>
+            <select id="select-cidade-filtro-bairro" class="form-select s2-cidade-filtro" style="width:100%">
+              <option value="">Todas as cidades</option>
+            </select>
+          </div>
 
-  if (cidadeSelecionada.imagem) {
-    preview.src = cidadeSelecionada.imagem;
-    preview.style.display = "block";
+          <!-- SELECT DE BAIRROS -->
+          <div class="mb-4">
+            <label class="form-label">Selecionar bairro</label>
+            <select id="select-bairros" class="form-select s2-bairro" style="width:100%">
+              <option value="">Selecione um bairro</option>
+            </select>
+          </div>
 
-    console.log(cidadeSelecionada.imagem)
-  } else {
-    preview.style.display = "none";
-  }
-});
+          <!-- ✏️ EDITAR BAIRRO -->
+          <div id="box-editar-bairro" class="card p-3 mb-4 d-none">
+            <h5>Editar Bairro</h5>
+            <form id="form-editar-bairro">
+              <div class="mb-2">
+                <label class="form-label">Nome do bairro</label>
+                <input class="form-control" type="text" name="nome" placeholder="Nome do bairro" required />
+              </div>
+              <div class="mb-2">
+                <label class="form-label">Cidade (atrelar)</label>
+                <select class="form-select s2-cidade-editar" name="cidade_id" id="select-cidade-editar-bairro" style="width:100%" required>
+                  <option value="">Selecione uma cidade</option>
+                </select>
+              </div>
+              <div class="mb-2">
+                <label class="form-label">URL amigável gerada</label>
+                <input class="form-control bg-light" type="text" id="preview-url-bairro" readonly placeholder="Gerada automaticamente" />
+                <small class="text-muted">Formato: /veiculos/:estado/cidade/bairro</small>
+              </div>
+              <div class="d-flex gap-2 mt-3">
+                <button class="btn btn-success" type="submit">Salvar</button>
+                <button class="btn btn-danger" type="button" id="btn-excluir-bairro">Excluir</button>
+              </div>
+            </form>
+          </div>
 
-// ➕ mostrar cadastro
-btnMostrarCadastro.addEventListener("click", () => {
-  boxCadastrar.classList.remove("d-none");
-  boxEditar.classList.add("d-none");
-  select.value = "";
-  cidadeSelecionada = null;
-});
+          <!-- ➕ CADASTRAR BAIRRO -->
+          <div id="box-cadastrar-bairro" class="card p-3 d-none">
+            <h5>Novo Bairro</h5>
+            <form id="form-cadastrar-bairro">
+              <div class="mb-2">
+                <label class="form-label">Nome do bairro</label>
+                <input class="form-control" type="text" name="nome" placeholder="Ex: Centro, Jardim América..." required />
+              </div>
+              <div class="mb-2">
+                <label class="form-label">Atrelar à cidade</label>
+                <select class="form-select s2-cidade-novo" name="cidade_id" id="select-cidade-novo-bairro" style="width:100%" required>
+                  <option value="">Selecione uma cidade</option>
+                </select>
+              </div>
+              <div class="mb-2">
+                <label class="form-label">URL que será gerada</label>
+                <input class="form-control bg-light" type="text" id="preview-url-novo-bairro" readonly placeholder="Gerada automaticamente ao escolher cidade e nome" />
+                <small class="text-muted">Formato: /veiculos/:estado/cidade/bairro</small>
+              </div>
+              <button class="btn btn-primary mt-2" type="submit">Cadastrar</button>
+            </form>
+          </div>
 
-// ✏️ editar
-formEditar.addEventListener("submit", async (e) => {
-  e.preventDefault();
+        </section>
 
-  if (!cidadeSelecionada) return;
+        <script>
+        // ── Estado global da aba Bairros ──
+        let bairroSelecionado = null;
+        let cidadesCache = [];
+        let abaBairrosIniciada = false;
 
-  const formData = new FormData(formEditar);
+        // ── Helpers ──
+        function slugifyBairro(texto) {
+          return (texto || "")
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/^-+|-+$/g, "");
+        }
 
-  await fetch(`/api/cidades/${cidadeSelecionada.id}`, {
-    method: "PUT",
-    body: formData
-  });
+        function montarUrlBairro(cidade, estado, bairro) {
+          if (!cidade || !estado || !bairro) return "";
+          const slugCidade = slugifyBairro(cidade);
+          const slugEstado = slugifyBairro(estado);
+          const slugBairro = slugifyBairro(bairro);
+          return `/veiculos/${slugEstado}/${slugCidade}/${slugBairro}`;
+        }
 
-  alert("Atualizado!");
-  carregarCidades();
-});
+        // ── Carregar cidades nos selects da aba Bairros ──
+        async function carregarCidadesParaBairros() {
+          if (cidadesCache.length) return cidadesCache;
+          const res = await fetch("/api/cidades");
+          cidadesCache = await res.json();
+          return cidadesCache;
+        }
 
-// ❌ excluir
-btnExcluir.addEventListener("click", async () => {
-  if (!cidadeSelecionada) return;
+        function preencherSelectCidades(selectEl, selecionadoId) {
+          selectEl.innerHTML = `<option value="">Selecione uma cidade</option>`;
+          cidadesCache.forEach(cidade => {
+            const opt = document.createElement("option");
+            opt.value = cidade.id;
+            opt.textContent = `${cidade.nome} - ${cidade.estado}`;
+            opt.dataset.nome = cidade.nome;
+            opt.dataset.estado = cidade.estado;
+            if (selecionadoId && String(cidade.id) === String(selecionadoId)) opt.selected = true;
+            selectEl.appendChild(opt);
+          });
+        }
 
-  if (!confirm("Excluir cidade?")) return;
+        // ── Carregar bairros no select principal ──
+        async function carregarBairros(filtroNomeCidade) {
+          let url = "/api/bairros";
+          if (filtroNomeCidade) url += `?cidade=${encodeURIComponent(filtroNomeCidade)}`;
+          const res = await fetch(url);
+          const bairros = await res.json();
 
-  await fetch(`/api/cidades/${cidadeSelecionada.id}`, {
-    method: "DELETE"
-  });
+          const selectBairros = document.getElementById("select-bairros");
+          selectBairros.innerHTML = `<option value="">Selecione um bairro</option>`;
+          bairros.forEach(b => {
+            const opt = document.createElement("option");
+            opt.value = b.id;
+            opt.textContent = `${b.nome} — ${b.cidade_nome} (${b.estado})`;
+            opt.dataset.bairro = JSON.stringify(b);
+            selectBairros.appendChild(opt);
+          });
+        }
 
-  boxEditar.classList.add("d-none");
-  cidadeSelecionada = null;
+        // ── Init Select2 (chamado uma vez após DOM estar pronto) ──
+        function initSelect2() {
+          // Filtro de cidade
+          $(".s2-cidade-filtro").select2({
+            placeholder: "Todas as cidades",
+            allowClear: true,
+            language: { noResults: () => "Nenhuma cidade encontrada" }
+          }).on("change", function() {
+            carregarBairros($(this).val());
+            document.getElementById("select-bairros").value = "";
+            $(".s2-bairro").val(null).trigger("change");
+            document.getElementById("box-editar-bairro").classList.add("d-none");
+            bairroSelecionado = null;
+          });
 
-  carregarCidades();
-});
+          // Select de bairro
+          $(".s2-bairro").select2({
+            placeholder: "Selecione um bairro",
+            allowClear: true,
+            language: { noResults: () => "Nenhum bairro encontrado" }
+          }).on("change", function() {
+            const id = $(this).val();
+            if (!id) {
+              document.getElementById("box-editar-bairro").classList.add("d-none");
+              bairroSelecionado = null;
+              return;
+            }
+            const opt = document.getElementById("select-bairros").options[document.getElementById("select-bairros").selectedIndex];
+            if (!opt || !opt.dataset.bairro) return;
+            bairroSelecionado = JSON.parse(opt.dataset.bairro);
+            document.getElementById("box-editar-bairro").classList.remove("d-none");
+            document.getElementById("box-cadastrar-bairro").classList.add("d-none");
+            carregarCidadesParaBairros().then(() => {
+              preencherSelectCidades(document.getElementById("select-cidade-editar-bairro"), bairroSelecionado.cidade_id);
+              reinitS2CidadeEditar();
+            });
+            document.getElementById("form-editar-bairro").nome.value = bairroSelecionado.nome;
+            document.getElementById("preview-url-bairro").value =
+              montarUrlBairro(bairroSelecionado.cidade_nome || bairroSelecionado.cidade, bairroSelecionado.estado, bairroSelecionado.nome);
+          });
 
-// ➕ cadastrar
-formCadastrar.addEventListener("submit", async (e) => {
-  e.preventDefault();
+          // Select cidade no painel Cidades
+          $(".s2-cidades").select2({
+            placeholder: "Selecione uma cidade",
+            allowClear: true,
+            language: { noResults: () => "Nenhuma cidade encontrada" }
+          }).on("change", function() {
+            // dispara o evento change original
+            const event = new Event("change");
+            document.getElementById("select-cidades").dispatchEvent(event);
+          });
+        }
 
-  const formData = new FormData(formCadastrar);
+        function reinitS2CidadeNovo() {
+          $(".s2-cidade-novo").select2({
+            placeholder: "Selecione uma cidade",
+            allowClear: true,
+            language: { noResults: () => "Nenhuma cidade encontrada" }
+          }).off("change").on("change", function() {
+            const opt = this.options[this.selectedIndex];
+            const nome = document.getElementById("form-cadastrar-bairro").nome.value;
+            if (opt && opt.dataset.nome) {
+              document.getElementById("preview-url-novo-bairro").value =
+                montarUrlBairro(opt.dataset.nome, opt.dataset.estado, nome);
+            }
+          });
+        }
 
-  await fetch("/api/cidades", {
-    method: "POST",
-    body: formData
-  });
+        function reinitS2CidadeEditar() {
+          $(".s2-cidade-editar").select2({
+            placeholder: "Selecione uma cidade",
+            allowClear: true,
+            language: { noResults: () => "Nenhuma cidade encontrada" }
+          }).off("change").on("change", function() {
+            const opt = this.options[this.selectedIndex];
+            const nome = document.getElementById("form-editar-bairro").nome.value;
+            if (opt && opt.dataset.nome) {
+              document.getElementById("preview-url-bairro").value =
+                montarUrlBairro(opt.dataset.nome, opt.dataset.estado, nome);
+            }
+          });
+        }
 
-  alert("Cadastrado!");
+        // ── Init da aba (roda apenas uma vez) ──
+        async function initAbaBairros() {
+          if (abaBairrosIniciada) return;
+          abaBairrosIniciada = true;
+          await carregarCidadesParaBairros();
 
-  formCadastrar.reset();
-  boxCadastrar.classList.add("d-none");
+          // Preenche filtro de cidades
+          const selectFiltroCidade = document.getElementById("select-cidade-filtro-bairro");
+          selectFiltroCidade.innerHTML = `<option value="">Todas as cidades</option>`;
+          cidadesCache.forEach(c => {
+            const opt = document.createElement("option");
+            opt.value = c.nome;
+            opt.textContent = `${c.nome} - ${c.estado}`;
+            selectFiltroCidade.appendChild(opt);
+          });
 
-  carregarCidades();
-});
+          // Re-init Select2 após preencher as opções
+          $(".s2-cidade-filtro").val(null).trigger("change.select2");
 
-// init
-carregarCidades();
+          await carregarBairros();
+        }
+
+        // ── Eventos ──
+
+        // Filtro por cidade
+        document.getElementById("select-cidade-filtro-bairro").addEventListener("change", function () {
+          carregarBairros(this.value);
+          document.getElementById("select-bairros").value = "";
+          document.getElementById("box-editar-bairro").classList.add("d-none");
+          bairroSelecionado = null;
+        });
+
+        // Selecionar bairro para editar
+        document.getElementById("select-bairros").addEventListener("change", async function () {
+          const selected = this.options[this.selectedIndex];
+          if (!selected.value) {
+            document.getElementById("box-editar-bairro").classList.add("d-none");
+            bairroSelecionado = null;
+            return;
+          }
+
+          bairroSelecionado = JSON.parse(selected.dataset.bairro);
+          document.getElementById("box-editar-bairro").classList.remove("d-none");
+          document.getElementById("box-cadastrar-bairro").classList.add("d-none");
+
+          await carregarCidadesParaBairros();
+          const selectEditarCidade = document.getElementById("select-cidade-editar-bairro");
+          preencherSelectCidades(selectEditarCidade, bairroSelecionado.cidade_id);
+
+          document.getElementById("form-editar-bairro").nome.value = bairroSelecionado.nome;
+
+          // Gera preview da URL
+          document.getElementById("preview-url-bairro").value =
+            montarUrlBairro(bairroSelecionado.cidade_nome, bairroSelecionado.estado, bairroSelecionado.nome);
+        });
+
+        // Botão "+ Novo Bairro"
+        // CORREÇÃO: await carregarCidadesParaBairros() ANTES de abrir o form,
+        // independente de a aba ter sido clicada antes.
+        document.getElementById("btn-mostrar-cadastro-bairro").addEventListener("click", async () => {
+          await carregarCidadesParaBairros(); // ← garante que o cache existe
+
+          document.getElementById("box-cadastrar-bairro").classList.remove("d-none");
+          document.getElementById("box-editar-bairro").classList.add("d-none");
+          document.getElementById("select-bairros").value = "";
+          bairroSelecionado = null;
+
+          preencherSelectCidades(document.getElementById("select-cidade-novo-bairro"));
+          document.getElementById("form-cadastrar-bairro").reset();
+          document.getElementById("preview-url-novo-bairro").value = "";
+        });
+
+        // Preview URL ao digitar nome (novo bairro)
+        document.getElementById("form-cadastrar-bairro").nome.addEventListener("input", function () {
+          const selectCidade = document.getElementById("select-cidade-novo-bairro");
+          const opt = selectCidade.options[selectCidade.selectedIndex];
+          if (opt && opt.dataset.nome) {
+            document.getElementById("preview-url-novo-bairro").value =
+              montarUrlBairro(opt.dataset.nome, opt.dataset.estado, this.value);
+          }
+        });
+
+        document.getElementById("select-cidade-novo-bairro").addEventListener("change", function () {
+          const opt = this.options[this.selectedIndex];
+          const nome = document.getElementById("form-cadastrar-bairro").nome.value;
+          if (opt && opt.dataset.nome) {
+            document.getElementById("preview-url-novo-bairro").value =
+              montarUrlBairro(opt.dataset.nome, opt.dataset.estado, nome);
+          }
+        });
+
+        // Preview URL ao editar
+        document.getElementById("form-editar-bairro").nome.addEventListener("input", function () {
+          const selectCidade = document.getElementById("select-cidade-editar-bairro");
+          const opt = selectCidade.options[selectCidade.selectedIndex];
+          if (opt && opt.dataset.nome) {
+            document.getElementById("preview-url-bairro").value =
+              montarUrlBairro(opt.dataset.nome, opt.dataset.estado, this.value);
+          }
+        });
+
+        document.getElementById("select-cidade-editar-bairro").addEventListener("change", function () {
+          const opt = this.options[this.selectedIndex];
+          const nome = document.getElementById("form-editar-bairro").nome.value;
+          if (opt && opt.dataset.nome) {
+            document.getElementById("preview-url-bairro").value =
+              montarUrlBairro(opt.dataset.nome, opt.dataset.estado, nome);
+          }
+        });
+
+        // ✅ CADASTRAR bairro
+        document.getElementById("form-cadastrar-bairro").addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const form = e.target;
+          const nome = form.nome.value.trim();
+          const selectCidade = document.getElementById("select-cidade-novo-bairro");
+          const opt = selectCidade.options[selectCidade.selectedIndex];
+
+          if (!nome) { alert("Informe o nome do bairro."); return; }
+          if (!opt || !opt.value) { alert("Selecione uma cidade para atrelar o bairro."); return; }
+
+          const payload = {
+            nome,
+            cidade:    opt.dataset.nome,
+            estado:    opt.dataset.estado,
+            slug:      slugifyBairro(nome)
+          };
+
+          try {
+            const res = await fetch("/api/bairros", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload)
+            });
+            const json = await res.json();
+            if (res.ok) {
+              alert("Bairro cadastrado com sucesso!");
+              form.reset();
+              document.getElementById("preview-url-novo-bairro").value = "";
+              document.getElementById("box-cadastrar-bairro").classList.add("d-none");
+              await carregarBairros();
+            } else {
+              alert("Erro: " + (json.message || "Não foi possível cadastrar."));
+            }
+          } catch (err) {
+            console.error("Erro ao cadastrar bairro:", err);
+            alert("Erro de conexão com o servidor.");
+          }
+        });
+
+        // ✅ EDITAR bairro
+        document.getElementById("form-editar-bairro").addEventListener("submit", async (e) => {
+          e.preventDefault();
+          if (!bairroSelecionado) return;
+
+          const form = e.target;
+          const nome = form.nome.value.trim();
+          const selectCidade = document.getElementById("select-cidade-editar-bairro");
+          const opt = selectCidade.options[selectCidade.selectedIndex];
+
+          if (!nome) { alert("Informe o nome do bairro."); return; }
+          if (!opt || !opt.value) { alert("Selecione uma cidade."); return; }
+
+          const payload = {
+            nome,
+            cidade:    opt.dataset.nome,
+            estado:    opt.dataset.estado,
+            slug:      slugifyBairro(nome)
+          };
+
+          try {
+            const res = await fetch(`/api/bairros/${bairroSelecionado.id}`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload)
+            });
+            const json = await res.json();
+            if (res.ok) {
+              alert("Bairro atualizado!");
+              document.getElementById("box-editar-bairro").classList.add("d-none");
+              bairroSelecionado = null;
+              await carregarBairros();
+            } else {
+              alert("Erro: " + (json.message || "Não foi possível atualizar."));
+            }
+          } catch (err) {
+            console.error("Erro ao atualizar bairro:", err);
+            alert("Erro de conexão com o servidor.");
+          }
+        });
+
+        // ✅ EXCLUIR bairro
+        document.getElementById("btn-excluir-bairro").addEventListener("click", async () => {
+          if (!bairroSelecionado) return;
+          if (!confirm(`Excluir o bairro "${bairroSelecionado.nome}"?`)) return;
+
+          try {
+            const res = await fetch(`/api/bairros/${bairroSelecionado.id}`, { method: "DELETE" });
+            if (res.ok) {
+              alert("Bairro excluído!");
+              document.getElementById("box-editar-bairro").classList.add("d-none");
+              bairroSelecionado = null;
+              document.getElementById("select-bairros").value = "";
+              await carregarBairros();
+            } else {
+              alert("Erro ao excluir.");
+            }
+          } catch (err) {
+            console.error("Erro ao excluir bairro:", err);
+            alert("Erro de conexão com o servidor.");
+          }
+        });
+
+        // Inicia a aba quando for clicada
+        document.querySelector('[data-target="bairros"]').addEventListener("click", () => {
+          initAbaBairros();
+        });
+
+        // Inicia Select2 assim que o jQuery estiver pronto
+        $(document).ready(function () {
+          initSelect2();
+        });
         </script>
       </div>
 
@@ -676,7 +1053,6 @@ carregarCidades();
         <div class="container mt-4" style="max-width:900px">
           <h3>Gerenciar Banners</h3>
 
-          <!-- Formulário de upload -->
           <div class="card mb-4">
             <div class="card-body">
               <h5 class="card-title">Adicionar Banner</h5>
@@ -706,7 +1082,6 @@ carregarCidades();
             </div>
           </div>
 
-          <!-- Lista de banners -->
           <div class="card">
             <div class="card-body">
               <h5 class="card-title">Banners Cadastrados</h5>
@@ -735,12 +1110,10 @@ async function carregarBannersAdmin() {
   const banners = await resp.json();
   const tbody = document.getElementById('tabelaBanners');
   tbody.innerHTML = '';
-
   if (!banners.length) {
     tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Nenhum banner cadastrado</td></tr>';
     return;
   }
-
   banners.forEach(b => {
     tbody.innerHTML += `
       <tr>
@@ -799,32 +1172,24 @@ carregarBannersAdmin();
       <div class="painel-content" id="editar-textos">
         <section class="mt-3">
           <div class="container mt-4">
-
             <h3>Gerenciar opções do menu Serviços</h3>
-
-            <!-- FORMULÁRIO CRIAR / EDITAR -->
             <div class="card mb-4">
               <div class="card-body">
                 <form id="formOpcao">
-
                   <input type="hidden" id="opcaoId">
-
                   <div class="row g-3">
                     <div class="col-md-4">
                       <label class="form-label">Nome da opção</label>
                       <input type="text" id="nome" class="form-control" required>
                     </div>
-
                     <div class="col-md-4">
                       <label class="form-label">URL de destino</label>
                       <input type="text" id="url" class="form-control" required>
                     </div>
-
                     <div class="col-md-2">
                       <label class="form-label">Ordem</label>
                       <input type="number" id="ordem" class="form-control" value="0">
                     </div>
-
                     <div class="col-md-2 d-flex align-items-end">
                       <div class="form-check">
                         <input class="form-check-input" type="checkbox" id="ativo" checked>
@@ -832,99 +1197,61 @@ carregarBannersAdmin();
                       </div>
                     </div>
                   </div>
-
                   <div class="mt-3">
                     <button class="btn btn-primary" type="submit">Salvar</button>
                     <button class="btn btn-secondary" type="button" onclick="resetForm()">Cancelar</button>
                   </div>
-
                 </form>
               </div>
             </div>
-
-
-            <!-- TABELA DE OPÇÕES -->
             <div class="card">
               <div class="card-body">
-
                 <table class="table table-striped align-middle">
                   <thead>
-                    <tr>
-                      <th>Ordem</th>
-                      <th>Nome</th>
-                      <th>URL</th>
-                      <th>Status</th>
-                      <th style="width:150px">Ações</th>
-                    </tr>
+                    <tr><th>Ordem</th><th>Nome</th><th>URL</th><th>Status</th><th style="width:150px">Ações</th></tr>
                   </thead>
-
-                  <tbody id="tabelaOpcoes">
-                    <!-- preenchido via JS -->
-                  </tbody>
-
+                  <tbody id="tabelaOpcoes"></tbody>
                 </table>
-
               </div>
             </div>
-
           </div>
 
           <script>
-
             async function carregarOpcoes() {
               const res = await fetch('/api/servicos-select');
               const dados = await res.json();
-
               const tbody = document.getElementById('tabelaOpcoes');
               tbody.innerHTML = '';
-
               dados.forEach(op => {
                 tbody.innerHTML += `
             <tr>
                 <td>${op.ordem}</td>
                 <td>${op.nome}</td>
                 <td>${op.url}</td>
-                <td>
-                    ${op.ativo ?
-                    '<span class="badge bg-success">Ativo</span>' :
-                    '<span class="badge bg-secondary">Inativo</span>'
-                  }
-                </td>
+                <td>${op.ativo ? '<span class="badge bg-success">Ativo</span>' : '<span class="badge bg-secondary">Inativo</span>'}</td>
                 <td>
                     <button class="btn btn-sm btn-warning" onclick='editarOpcao(${JSON.stringify(op)})'>Editar</button>
                     <button class="btn btn-sm btn-danger" onclick="excluirOpcao(${op.id})">Excluir</button>
                 </td>
-            </tr>
-        `;
+            </tr>`;
               });
             }
 
-
             document.getElementById('formOpcao').addEventListener('submit', async (e) => {
               e.preventDefault();
-
               const id = document.getElementById('opcaoId').value;
-
               const dados = {
                 nome: document.getElementById('nome').value,
                 url: document.getElementById('url').value,
                 ordem: document.getElementById('ordem').value,
                 ativo: document.getElementById('ativo').checked
               };
-
               const metodo = id ? 'PUT' : 'POST';
               const endpoint = id ? `/api/servicos-select/${id}` : '/api/servicos-select';
-
-              await fetch(endpoint, {
-                method: metodo,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(dados)
-              });
-
+              await fetch(endpoint, { method: metodo, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dados) });
               resetForm();
               carregarOpcoes();
             });
-
 
             function editarOpcao(op) {
               document.getElementById('opcaoId').value = op.id;
@@ -934,1120 +1261,302 @@ carregarBannersAdmin();
               document.getElementById('ativo').checked = op.ativo;
             }
 
-
             async function excluirOpcao(id) {
               if (!confirm('Deseja excluir esta opção?')) return;
-
               await fetch(`/api/servicos-select/${id}`, { method: 'DELETE' });
               carregarOpcoes();
             }
-
 
             function resetForm() {
               document.getElementById('formOpcao').reset();
               document.getElementById('opcaoId').value = '';
             }
 
-
             carregarOpcoes();
-
           </script>
         </section>
-
-        <section class="container my-5 d-none">
-          <h2>Gerenciar Página Quem Somos</h2>
-
-          <!-- FORM -->
-          <div class="card p-4 mb-4">
-            <form id="formQuemSomos">
-
-              <input type="hidden" id="blocoId">
-
-              <div class="mb-3">
-                <label class="form-label">Título</label>
-                <input type="text" id="qs_titulo" name="titulo" class="form-control">
-              </div>
-
-              <div class="mb-3">
-                <label class="form-label">Subtítulo</label>
-                <input type="text" id="qs_subtitulo" name="subtitulo" class="form-control">
-              </div>
-
-              <div class="mb-3">
-                <label class="form-label">Texto</label>
-                <textarea id="qs_texto" name="texto" class="form-control" rows="4" required></textarea>
-              </div>
-
-              <div class="mb-3">
-                <label class="form-label">Ordem de exibição</label>
-                <input type="number" id="qs_ordem" name="ordem" class="form-control" value="0">
-              </div>
-
-              <button type="submit" class="btn btn-primary">
-                Salvar bloco
-              </button>
-
-              <button type="button" class="btn btn-secondary" onclick="resetFormQS()">
-                Novo
-              </button>
-
-            </form>
-          </div>
-
-          <!-- LISTA -->
-          <div class="card p-4">
-            <h4>Blocos cadastrados</h4>
-            <div id="listaBlocos"></div>
-          </div>
-
-          <script>
-            async function carregarBlocos() {
-              const res = await fetch('/api/admin/quem-somos');
-              const blocos = await res.json();
-
-              const container = document.getElementById('listaBlocos');
-              container.innerHTML = '';
-
-              blocos.forEach(b => {
-                container.innerHTML += `
-      <div class="border p-3 mb-3">
-        <h5>${b.titulo || '(sem título)'}</h5>
-        <p><strong>${b.subtitulo || ''}</strong></p>
-        <p>${b.texto}</p>
-
-        <button class="btn btn-sm btn-warning" onclick='editarBloco(${JSON.stringify(b)})'>
-          Editar
-        </button>
-
-        <button class="btn btn-sm btn-danger" onclick="excluirBloco(${b.id})">
-          Excluir
-        </button>
-      </div>
-    `;
-              });
-            }
-
-
-            document.getElementById('formQuemSomos').addEventListener('submit', async (e) => {
-              e.preventDefault();
-
-              const form = e.target;
-              const formData = new FormData(form);
-
-              const id = document.getElementById('blocoId').value;
-
-              const dados = {
-                titulo: formData.get('titulo')?.trim() || '',
-                subtitulo: formData.get('subtitulo')?.trim() || '',
-                texto: formData.get('texto')?.trim() || '',
-                ordem: parseInt(formData.get('ordem')) || 0
-              };
-
-              const metodo = id ? 'PUT' : 'POST';
-              const endpoint = id ? `/api/admin/quem-somos/${id}` : '/api/admin/quem-somos';
-
-              await fetch(endpoint, {
-                method: metodo,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(dados)
-              });
-
-              resetFormQS();
-              carregarBlocos();
-            });
-
-
-            function editarBloco(b) {
-              document.getElementById('blocoId').value = b.id;
-              document.getElementById('qs_titulo').value = b.titulo || '';
-              document.getElementById('qs_subtitulo').value = b.subtitulo || '';
-              document.getElementById('qs_texto').value = b.texto || '';
-              document.getElementById('qs_ordem').value = b.ordem || 0;
-            }
-
-
-            async function excluirBloco(id) {
-              if (!confirm('Excluir este bloco?')) return;
-
-              await fetch(`/api/admin/quem-somos/${id}`, { method: 'DELETE' });
-              carregarBlocos();
-            }
-
-
-            function resetFormQS() {
-              document.getElementById('formQuemSomos').reset();
-              document.getElementById('blocoId').value = '';
-            }
-
-
-            carregarBlocos();
-          </script>
-        </section>
-
-        <section class="container my-5 d-none">
-          <h2>Gerenciar Página Fale Conosco</h2>
-
-          <div class="card p-4 mb-4">
-            <form id="formFaleConosco">
-              <input type="hidden" id="fc_id">
-
-              <div class="mb-3">
-                <label>Título</label>
-                <input type="text" name="titulo" id="fc_titulo" class="form-control">
-              </div>
-
-              <div class="mb-3">
-                <label>Subtítulo</label>
-                <input type="text" name="subtitulo" id="fc_subtitulo" class="form-control">
-              </div>
-
-              <div class="mb-3">
-                <label>Texto</label>
-                <textarea name="texto" id="fc_texto" class="form-control" rows="4" required></textarea>
-              </div>
-
-              <div class="mb-3">
-                <label>Ordem</label>
-                <input type="number" name="ordem" id="fc_ordem" class="form-control" value="0">
-              </div>
-
-              <button type="submit" class="btn btn-primary">Salvar</button>
-              <button type="button" class="btn btn-secondary" onclick="resetFC()">Novo</button>
-            </form>
-          </div>
-
-          <div class="card p-4">
-            <h4>Blocos cadastrados</h4>
-            <div id="listaFC"></div>
-          </div>
-        </section>
-
-        <script>
-          async function carregarFC() {
-            const res = await fetch('/api/admin/fale-conosco');
-            const dados = await res.json();
-
-            const container = document.getElementById('listaFC');
-            container.innerHTML = '';
-
-            dados.forEach(b => {
-              container.innerHTML += `
-      <div class="border p-3 mb-3">
-        <h5>${b.titulo || '(sem título)'}</h5>
-        <p><strong>${b.subtitulo || ''}</strong></p>
-        <p>${b.texto}</p>
-
-        <button class="btn btn-sm btn-warning" onclick='editarFC(${JSON.stringify(b)})'>Editar</button>
-        <button class="btn btn-sm btn-danger" onclick="excluirFC(${b.id})">Excluir</button>
-      </div>
-    `;
-            });
-          }
-
-          document.getElementById('formFaleConosco').addEventListener('submit', async e => {
-            e.preventDefault();
-            const form = new FormData(e.target);
-
-            const id = document.getElementById('fc_id').value;
-
-            const dados = {
-              titulo: form.get('titulo'),
-              subtitulo: form.get('subtitulo'),
-              texto: form.get('texto'),
-              ordem: form.get('ordem')
-            };
-
-            const metodo = id ? 'PUT' : 'POST';
-            const url = id ? `/api/admin/fale-conosco/${id}` : '/api/admin/fale-conosco';
-
-            await fetch(url, {
-              method: metodo,
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(dados)
-            });
-
-            resetFC();
-            carregarFC();
-          });
-
-          function editarFC(b) {
-            fc_id.value = b.id;
-            fc_titulo.value = b.titulo || '';
-            fc_subtitulo.value = b.subtitulo || '';
-            fc_texto.value = b.texto || '';
-            fc_ordem.value = b.ordem || 0;
-          }
-
-          async function excluirFC(id) {
-            if (!confirm('Excluir bloco?')) return;
-            await fetch(`/api/admin/fale-conosco/${id}`, { method: 'DELETE' });
-            carregarFC();
-          }
-
-          function resetFC() {
-            formFaleConosco.reset();
-            fc_id.value = '';
-          }
-
-          carregarFC();
-        </script>
-
-        <section class="container my-5 d-none">
-          <h2>Gerenciar Regras Gerais</h2>
-
-          <div class="card p-4 mb-4">
-            <form id="formRegras">
-              <input type="hidden" id="rg_id">
-
-              <input type="text" name="titulo" id="rg_titulo" class="form-control mb-3" placeholder="Título">
-              <input type="text" name="subtitulo" id="rg_subtitulo" class="form-control mb-3" placeholder="Subtítulo">
-              <textarea name="texto" id="rg_texto" class="form-control mb-3" rows="4" required></textarea>
-              <input type="number" name="ordem" id="rg_ordem" class="form-control mb-3" value="0">
-
-              <button type="submit" class="btn btn-primary">Salvar</button>
-              <button type="button" class="btn btn-secondary" onclick="resetRG()">Novo</button>
-            </form>
-          </div>
-
-          <div class="card p-4">
-            <h4>Blocos cadastrados</h4>
-            <div id="listaRG"></div>
-          </div>
-        </section>
-
-        <script>
-          async function carregarRG() {
-            const res = await fetch('/api/admin/regras-gerais');
-            const dados = await res.json();
-            listaRG.innerHTML = dados.map(b => `
-    <div class="border p-3 mb-3">
-      <h5>${b.titulo || '(sem título)'}</h5>
-      <p><strong>${b.subtitulo || ''}</strong></p>
-      <p>${b.texto}</p>
-      <button class="btn btn-warning btn-sm" onclick='editarRG(${JSON.stringify(b)})'>Editar</button>
-      <button class="btn btn-danger btn-sm" onclick="excluirRG(${b.id})">Excluir</button>
-    </div>`).join('');
-          }
-
-          formRegras.addEventListener('submit', async e => {
-            e.preventDefault();
-            const form = new FormData(e.target);
-            const id = rg_id.value;
-
-            const dados = Object.fromEntries(form.entries());
-
-            const metodo = id ? 'PUT' : 'POST';
-            const url = id ? `/api/admin/regras-gerais/${id}` : '/api/admin/regras-gerais';
-
-            await fetch(url, { method: metodo, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dados) });
-            resetRG();
-            carregarRG();
-          });
-
-          function editarRG(b) { rg_id.value = b.id; rg_titulo.value = b.titulo || ''; rg_subtitulo.value = b.subtitulo || ''; rg_texto.value = b.texto; rg_ordem.value = b.ordem || 0; }
-          async function excluirRG(id) { if (!confirm('Excluir?')) return; await fetch(`/api/admin/regras-gerais/${id}`, { method: 'DELETE' }); carregarRG(); }
-          function resetRG() { formRegras.reset(); rg_id.value = ''; }
-          carregarRG();
-        </script>
-
-        <section class="container my-5 d-none">
-          <h2>Gerenciar Política de Privacidade</h2>
-
-          <div class="card p-4 mb-4">
-            <form id="formPolitica">
-              <input type="hidden" id="pp_id">
-
-              <div class="mb-3">
-                <label>Título</label>
-                <input type="text" name="titulo" id="pp_titulo" class="form-control">
-              </div>
-
-              <div class="mb-3">
-                <label>Subtítulo</label>
-                <input type="text" name="subtitulo" id="pp_subtitulo" class="form-control">
-              </div>
-
-              <div class="mb-3">
-                <label>Texto</label>
-                <textarea name="texto" id="pp_texto" class="form-control" rows="4" required></textarea>
-              </div>
-
-              <div class="mb-3">
-                <label>Ordem</label>
-                <input type="number" name="ordem" id="pp_ordem" class="form-control" value="0">
-              </div>
-
-              <button type="submit" class="btn btn-primary">Salvar</button>
-              <button type="button" class="btn btn-secondary" onclick="resetPP()">Novo</button>
-            </form>
-          </div>
-
-          <div class="card p-4">
-            <h4>Blocos cadastrados</h4>
-            <div id="listaPP"></div>
-          </div>
-        </section>
-
-        <script>
-          async function carregarPP() {
-            const res = await fetch('/api/admin/politica-privacidade');
-            const dados = await res.json();
-
-            listaPP.innerHTML = dados.map(b => `
-    <div class="border p-3 mb-3">
-      <h5>${b.titulo || '(sem título)'}</h5>
-      <p><strong>${b.subtitulo || ''}</strong></p>
-      <p>${b.texto}</p>
-
-      <button class="btn btn-sm btn-warning" onclick='editarPP(${JSON.stringify(b)})'>Editar</button>
-      <button class="btn btn-sm btn-danger" onclick="excluirPP(${b.id})">Excluir</button>
-    </div>
-  `).join('');
-          }
-
-          formPolitica.addEventListener('submit', async e => {
-            e.preventDefault();
-
-            const form = new FormData(e.target);
-            const id = pp_id.value;
-
-            const dados = Object.fromEntries(form.entries());
-
-            const metodo = id ? 'PUT' : 'POST';
-            const url = id ? `/api/admin/politica-privacidade/${id}` : '/api/admin/politica-privacidade';
-
-            await fetch(url, {
-              method: metodo,
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(dados)
-            });
-
-            resetPP();
-            carregarPP();
-          });
-
-          function editarPP(b) {
-            pp_id.value = b.id;
-            pp_titulo.value = b.titulo || '';
-            pp_subtitulo.value = b.subtitulo || '';
-            pp_texto.value = b.texto || '';
-            pp_ordem.value = b.ordem || 0;
-          }
-
-          async function excluirPP(id) {
-            if (!confirm('Excluir bloco?')) return;
-            await fetch(`/api/admin/politica-privacidade/${id}`, { method: 'DELETE' });
-            carregarPP();
-          }
-
-          function resetPP() {
-            formPolitica.reset();
-            pp_id.value = '';
-          }
-
-          carregarPP();
-        </script>
-
-        <section class="container my-5 d-none">
-          <h2>Gerenciar Termos de Uso</h2>
-
-          <div class="card p-4 mb-4">
-            <form id="formTermos">
-              <input type="hidden" id="tu_id">
-
-              <div class="mb-3">
-                <label>Título</label>
-                <input type="text" name="titulo" id="tu_titulo" class="form-control">
-              </div>
-
-              <div class="mb-3">
-                <label>Subtítulo</label>
-                <input type="text" name="subtitulo" id="tu_subtitulo" class="form-control">
-              </div>
-
-              <div class="mb-3">
-                <label>Texto</label>
-                <textarea name="texto" id="tu_texto" class="form-control" rows="4" required></textarea>
-              </div>
-
-              <div class="mb-3">
-                <label>Ordem</label>
-                <input type="number" name="ordem" id="tu_ordem" class="form-control" value="0">
-              </div>
-
-              <button type="submit" class="btn btn-primary">Salvar</button>
-              <button type="button" class="btn btn-secondary" onclick="resetTU()">Novo</button>
-            </form>
-          </div>
-
-          <div class="card p-4">
-            <h4>Blocos cadastrados</h4>
-            <div id="listaTU"></div>
-          </div>
-        </section>
-
-        <script>
-          async function carregarTU() {
-            const res = await fetch('/api/admin/termos-uso');
-            const dados = await res.json();
-
-            listaTU.innerHTML = dados.map(b => `
-    <div class="border p-3 mb-3">
-      <h5>${b.titulo || '(sem título)'}</h5>
-      <p><strong>${b.subtitulo || ''}</strong></p>
-      <p>${b.texto}</p>
-
-      <button class="btn btn-sm btn-warning" onclick='editarTU(${JSON.stringify(b)})'>Editar</button>
-      <button class="btn btn-sm btn-danger" onclick="excluirTU(${b.id})">Excluir</button>
-    </div>
-  `).join('');
-          }
-
-          formTermos.addEventListener('submit', async e => {
-            e.preventDefault();
-
-            const form = new FormData(e.target);
-            const id = tu_id.value;
-
-            const dados = Object.fromEntries(form.entries());
-
-            const metodo = id ? 'PUT' : 'POST';
-            const url = id ? `/api/admin/termos-uso/${id}` : '/api/admin/termos-uso';
-
-            await fetch(url, {
-              method: metodo,
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(dados)
-            });
-
-            resetTU();
-            carregarTU();
-          });
-
-          function editarTU(b) {
-            tu_id.value = b.id;
-            tu_titulo.value = b.titulo || '';
-            tu_subtitulo.value = b.subtitulo || '';
-            tu_texto.value = b.texto || '';
-            tu_ordem.value = b.ordem || 0;
-          }
-
-          async function excluirTU(id) {
-            if (!confirm('Excluir bloco?')) return;
-            await fetch(`/api/admin/termos-uso/${id}`, { method: 'DELETE' });
-            carregarTU();
-          }
-
-          function resetTU() {
-            formTermos.reset();
-            tu_id.value = '';
-          }
-
-          carregarTU();
-        </script>
       </div>
 
       <div class="painel-content" id="editar-imagens">
         <div class="container mt-4" style="max-width:800px">
-
           <h3 class="mb-3">Imagens do Site</h3>
-
-          <!-- ============================= -->
-          <!-- LOGO HEADER -->
-          <!-- ============================= -->
           <div class="card" style="padding: 20px;">
             <div class="card mb-4">
               <div class="card-body">
                 <h5 class="mb-3">Logo do Header</h5>
-
                 <div class="d-flex align-items-center gap-3 flex-wrap">
-
-                  <!-- PREVIEW -->
                   <div class="text-center">
-                    <img id="previewLogo" class="border rounded"
-                      style="max-height:80px; min-height:80px; object-fit:contain; padding:6px;">
+                    <img id="previewLogo" class="border rounded" style="max-height:80px; min-height:80px; object-fit:contain; padding:6px;">
                   </div>
-
-                  <!-- AÇÕES -->
                   <div class="flex-grow-1">
-
                     <input type="hidden" id="logoAtual">
-
                     <input type="file" id="inputLogo" class="form-control mb-2" accept="image/*">
-
                     <div class="d-flex gap-2">
-                      <button class="btn btn-outline-danger" id="btnRemoverLogo" type="button">
-                        Remover imagem
-                      </button>
-
-                      <small class="text-muted align-self-center">
-                        PNG ou JPG recomendado
-                      </small>
+                      <button class="btn btn-outline-danger" id="btnRemoverLogo" type="button">Remover imagem</button>
+                      <small class="text-muted align-self-center">PNG ou JPG recomendado</small>
                     </div>
-
                   </div>
-
                 </div>
               </div>
             </div>
 
-
-            <!-- ============================= -->
-            <!-- FAVICON -->
-            <!-- ============================= -->
             <div class="card mb-4">
               <div class="card-body">
                 <h5 class="mb-3">Ícone da Página (Favicon)</h5>
-
                 <div class="d-flex align-items-center gap-3 flex-wrap">
-
-                  <!-- PREVIEW -->
                   <div class="text-center">
-                    <img id="previewFavicon" class="border rounded"
-                      style="max-height:50px; min-height:50px; object-fit:contain; padding:6px;">
+                    <img id="previewFavicon" class="border rounded" style="max-height:50px; min-height:50px; object-fit:contain; padding:6px;">
                   </div>
-
-                  <!-- AÇÕES -->
                   <div class="flex-grow-1">
-
                     <input type="hidden" id="faviconAtual">
-
                     <input type="file" id="inputFavicon" class="form-control mb-2" accept="image/*">
-
                     <div class="d-flex gap-2">
-                      <button class="btn btn-outline-danger" id="btnRemoverFavicon" type="button">
-                        Remover imagem
-                      </button>
-
-                      <small class="text-muted align-self-center">
-                        Preferência: PNG 32x32
-                      </small>
+                      <button class="btn btn-outline-danger" id="btnRemoverFavicon" type="button">Remover imagem</button>
+                      <small class="text-muted align-self-center">Preferência: PNG 32x32</small>
                     </div>
-
                   </div>
-
                 </div>
               </div>
             </div>
 
-
-            <!-- BOTÃO SALVAR -->
-            <button class="btn btn-primary w-100 mt-3" onclick="salvarImagensSiteConfig()">
-              Salvar alterações
-            </button>
+            <button class="btn btn-primary w-100 mt-3" onclick="salvarImagensSiteConfig()">Salvar alterações</button>
           </div>
 
           <div class="card">
             <div class="card-body">
-
               <div class="d-flex justify-content-between align-items-center mb-3">
                 <h5 class="mb-0">Banners de Cidades</h5>
-                <button class="btn btn-primary" onclick="adicionarImagemRegiao()">
-                  + Novo banner
-                </button>
+                <button class="btn btn-primary" onclick="adicionarImagemRegiao()">+ Novo banner</button>
               </div>
-
-              <!-- SELECT -->
               <div class="mb-3">
                 <label class="form-label">Selecione a cidade</label>
                 <select id="selectCidade" class="form-select">
                   <option value="">Selecione uma cidade</option>
                 </select>
               </div>
-
-              <!-- LISTA -->
               <div id="listaRegiao" class="d-flex flex-column gap-3"></div>
-
-              <!-- EMPTY -->
-              <div id="emptyRegiao" class="text-center text-muted d-none">
-                Nenhum banner cadastrado para esta cidade
-              </div>
-
-              <!-- SALVAR -->
+              <div id="emptyRegiao" class="text-center text-muted d-none">Nenhum banner cadastrado para esta cidade</div>
               <div class="d-grid mt-4">
-                <button class="btn btn-primary" onclick="salvarImagensRegiao()">
-                  Salvar alterações
-                </button>
+                <button class="btn btn-primary" onclick="salvarImagensRegiao()">Salvar alterações</button>
               </div>
-
             </div>
 
-            <!-- TEMPLATE -->
             <template id="templateRegiao">
               <div class="slide-item border p-3 rounded">
-
                 <input type="hidden" class="input-id">
-
                 <div class="row">
                   <div class="col-md-3">
-                    <img class="preview img-fluid rounded"
-                      src="/uploads/anuncios/regioes/1774637770227-851750240.png" />
+                    <img class="preview img-fluid rounded" src="/uploads/anuncios/regioes/1774637770227-851750240.png" />
                   </div>
-
                   <div class="col-md-9">
                     <input type="file" class="form-control input-imagem mb-2">
-
-                    <button type="button" class="btn btn-danger btn-remover">
-                      Remover
-                    </button>
+                    <button type="button" class="btn btn-danger btn-remover">Remover</button>
                   </div>
                 </div>
-
               </div>
             </template>
           </div>
 
           <script>
-            /* ==========================
-               CONFIG
-            ========================== */
             const API_CIDADES = "/api/cidades";
             const API_LISTAR_CIDADES = "/api/admin/regioes/imagens";
             const API_SALVAR_CIDADES = "/api/admin/regioes/imagens";
             const API_EXCLUIR_CIDADES = "/api/admin/regioes/imagens";
 
-            /* ==========================
-               INIT
-            ========================== */
             document.addEventListener("DOMContentLoaded", () => {
               carregarCidades();
-
-              document.getElementById("selectCidade")
-                .addEventListener("change", carregarImagensRegiao);
+              document.getElementById("selectCidade").addEventListener("change", carregarImagensRegiao);
             });
 
-            /* ==========================
-               CARREGAR CIDADES
-            ========================== */
             async function carregarCidades() {
               try {
                 const res = await fetch(API_CIDADES);
                 const data = await res.json();
-
                 const select = document.getElementById("selectCidade");
                 select.innerHTML = `<option value="">Selecione uma cidade</option>`;
-
                 data.forEach(loc => {
                   const option = document.createElement("option");
                   option.value = loc.nome;
                   option.textContent = `${loc.nome} - ${loc.estado}`;
                   select.appendChild(option);
                 });
-
-              } catch (err) {
-                console.error("Erro ao carregar cidades:", err);
-              }
+              } catch (err) { console.error("Erro ao carregar cidades:", err); }
             }
 
-            /* ==========================
-               ADICIONAR ITEM
-            ========================== */
             function adicionarImagemRegiao(dados = {}) {
               const template = document.getElementById("templateRegiao");
               const clone = template.content.cloneNode(true);
               const item = clone.querySelector(".slide-item");
-
               const inputId = item.querySelector(".input-id");
               const inputImagem = item.querySelector(".input-imagem");
               const preview = item.querySelector(".preview");
               const btnRemover = item.querySelector(".btn-remover");
-
               if (dados.id) inputId.value = dados.id;
               if (dados.imagem) preview.src = dados.imagem;
-
-              /* PREVIEW */
               inputImagem.addEventListener("change", () => {
                 const file = inputImagem.files[0];
                 if (file) preview.src = URL.createObjectURL(file);
               });
-
-              /* REMOVER */
               btnRemover.addEventListener("click", async () => {
                 const id = inputId.value;
-
-                if (!id) {
-                  item.remove();
-                  verificarEmptyState();
-                  return;
-                }
-
+                if (!id) { item.remove(); verificarEmptyState(); return; }
                 if (!confirm("Deseja excluir esta imagem?")) return;
-
                 try {
-                  const res = await fetch(`${API_EXCLUIR_CIDADES}/${id}`, {
-                    method: "DELETE"
-                  });
-
-                  if (res.ok) {
-                    item.remove();
-                    verificarEmptyState();
-                  } else {
-                    alert("Erro ao excluir");
-                  }
-
-                } catch (err) {
-                  console.error(err);
-                }
+                  const res = await fetch(`${API_EXCLUIR_CIDADES}/${id}`, { method: "DELETE" });
+                  if (res.ok) { item.remove(); verificarEmptyState(); }
+                  else alert("Erro ao excluir");
+                } catch (err) { console.error(err); }
               });
-
               document.getElementById("listaRegiao").appendChild(clone);
               verificarEmptyState();
             }
 
-            /* ==========================
-               CARREGAR IMAGENS
-            ========================== */
             async function carregarImagensRegiao() {
               const cidade = document.getElementById("selectCidade").value;
-
               const lista = document.getElementById("listaRegiao");
               const empty = document.getElementById("emptyRegiao");
-
               lista.innerHTML = "";
-
-              if (!cidade) {
-                empty.classList.remove("d-none");
-                return;
-              }
-
+              if (!cidade) { empty.classList.remove("d-none"); return; }
               try {
                 const res = await fetch(`${API_LISTAR_CIDADES}?cidade=${encodeURIComponent(cidade)}`);
                 const imagens = await res.json();
-
-                if (!imagens.length) {
-                  empty.classList.remove("d-none");
-                  return;
-                }
-
+                if (!imagens.length) { empty.classList.remove("d-none"); return; }
                 empty.classList.add("d-none");
-
-                imagens.forEach(img => {
-                  adicionarImagemRegiao({
-                    id: img.id,
-                    imagem: `/uploads/anuncios/${img.imagem}`
-                  });
-                });
-
-              } catch (err) {
-                console.error("Erro ao carregar imagens:", err);
-              }
+                imagens.forEach(img => { adicionarImagemRegiao({ id: img.id, imagem: `/uploads/anuncios/${img.imagem}` }); });
+              } catch (err) { console.error("Erro ao carregar imagens:", err); }
             }
 
-            /* ==========================
-               SALVAR
-            ========================== */
             async function salvarImagensRegiao() {
               const cidade = document.getElementById("selectCidade").value;
               const itens = document.querySelectorAll(".slide-item");
-
-              if (!cidade) {
-                alert("Selecione uma cidade");
-                return;
-              }
-
-              if (itens.length === 0) {
-                alert("Adicione pelo menos uma imagem");
-                return;
-              }
-
+              if (!cidade) { alert("Selecione uma cidade"); return; }
+              if (itens.length === 0) { alert("Adicione pelo menos uma imagem"); return; }
               const formData = new FormData();
               formData.append("cidade", cidade);
-
               itens.forEach(item => {
                 const id = item.querySelector(".input-id").value;
                 const fileInput = item.querySelector(".input-imagem");
                 const file = fileInput.files[0];
-
                 formData.append("ids[]", id || "");
                 formData.append("temImagem[]", file ? "true" : "false");
-
                 if (file) formData.append("imagens", file);
               });
-
               try {
-                const res = await fetch(API_SALVAR_CIDADES, {
-                  method: "POST",
-                  body: formData
-                });
-
+                const res = await fetch(API_SALVAR_CIDADES, { method: "POST", body: formData });
                 const json = await res.json();
-
-                if (res.ok) {
-                  alert("Salvo com sucesso!");
-                  carregarImagensRegiao();
-                } else {
-                  alert(json.message || "Erro ao salvar");
-                }
-
-              } catch (err) {
-                console.error("Erro ao salvar:", err);
-              }
+                if (res.ok) { alert("Salvo com sucesso!"); carregarImagensRegiao(); }
+                else alert(json.message || "Erro ao salvar");
+              } catch (err) { console.error("Erro ao salvar:", err); }
             }
 
-            /* ==========================
-               EMPTY STATE
-            ========================== */
             function verificarEmptyState() {
               const lista = document.getElementById("listaRegiao");
               const empty = document.getElementById("emptyRegiao");
-
-              if (lista.children.length === 0) {
-                empty.classList.remove("d-none");
-              } else {
-                empty.classList.add("d-none");
-              }
+              if (lista.children.length === 0) empty.classList.remove("d-none");
+              else empty.classList.add("d-none");
             }
           </script>
 
           <script>
-            /* ==========================
-               CONFIG
-            ========================== */
             const API_CONFIG_LISTAR = "/api/configuracoes-site";
             const API_CONFIG_SALVAR = "/api/admin/configuracoes-site";
-
-
-            /* ==========================
-               ESTADO LOCAL
-            ========================== */
             let removerLogo = false;
             let removerFavicon = false;
 
-
-            /* ==========================
-               PREVIEW DE IMAGEM
-            ========================== */
             function previewImagem(input, previewId) {
               const file = input.files[0];
               if (!file) return;
-
-              const preview = document.getElementById(previewId);
-              preview.src = URL.createObjectURL(file);
+              document.getElementById(previewId).src = URL.createObjectURL(file);
             }
 
-
-            /* ==========================
-               MARCAR PARA EXCLUIR
-            ========================== */
             function marcarRemocao(tipo) {
-              if (tipo === "logo") {
-                removerLogo = true;
-                document.getElementById("previewLogo").src = "";
-                document.getElementById("inputLogo").value = "";
-              }
-
-              if (tipo === "favicon") {
-                removerFavicon = true;
-                document.getElementById("previewFavicon").src = "";
-                document.getElementById("inputFavicon").value = "";
-              }
+              if (tipo === "logo") { removerLogo = true; document.getElementById("previewLogo").src = ""; document.getElementById("inputLogo").value = ""; }
+              if (tipo === "favicon") { removerFavicon = true; document.getElementById("previewFavicon").src = ""; document.getElementById("inputFavicon").value = ""; }
             }
 
-
-            /* ==========================
-               CARREGAR CONFIGURAÇÕES
-            ========================== */
             async function carregarConfiguracoesSite() {
               try {
                 const resposta = await fetch(API_CONFIG_LISTAR);
                 const config = await resposta.json();
-
                 if (!config) return;
-
-                if (config.logo) {
-                  document.getElementById("previewLogo").src =
-                    "/uploads/anuncios/" + config.logo;
-
-                  document.getElementById("logoAtual").value = config.logo;
-                }
-
-                if (config.favicon) {
-                  document.getElementById("previewFavicon").src =
-                    "/uploads/anuncios/" + config.favicon;
-
-                  document.getElementById("faviconAtual").value = config.favicon;
-                }
-
-              } catch (erro) {
-                console.error("Erro ao carregar configurações:", erro);
-              }
+                if (config.logo) { document.getElementById("previewLogo").src = "/uploads/anuncios/" + config.logo; document.getElementById("logoAtual").value = config.logo; }
+                if (config.favicon) { document.getElementById("previewFavicon").src = "/uploads/anuncios/" + config.favicon; document.getElementById("faviconAtual").value = config.favicon; }
+              } catch (erro) { console.error("Erro ao carregar configurações:", erro); }
             }
 
-
-            /* ==========================
-               SALVAR ALTERAÇÕES
-            ========================== */
             async function salvarImagensSiteConfig() {
               const formData = new FormData();
-
               const fileLogo = document.getElementById("inputLogo").files[0];
               const fileFavicon = document.getElementById("inputFavicon").files[0];
-
               formData.append("removerLogo", removerLogo);
               formData.append("removerFavicon", removerFavicon);
-
               if (fileLogo) formData.append("logo", fileLogo);
               if (fileFavicon) formData.append("favicon", fileFavicon);
-
               try {
-                const resposta = await fetch(API_CONFIG_SALVAR, {
-                  method: "POST",
-                  body: formData
-                });
-
+                const resposta = await fetch(API_CONFIG_SALVAR, { method: "POST", body: formData });
                 const json = await resposta.json();
-
-                if (resposta.ok) {
-                  alert(json.message || "Configurações salvas!");
-                  removerLogo = false;
-                  removerFavicon = false;
-                  carregarConfiguracoesSite();
-                } else {
-                  alert(json.message || "Erro ao salvar.");
-                }
-
-              } catch (erro) {
-                console.error("Erro ao salvar:", erro);
-                alert("Erro de conexão com o servidor.");
-              }
+                if (resposta.ok) { alert(json.message || "Configurações salvas!"); removerLogo = false; removerFavicon = false; carregarConfiguracoesSite(); }
+                else alert(json.message || "Erro ao salvar.");
+              } catch (erro) { console.error("Erro ao salvar:", erro); alert("Erro de conexão com o servidor."); }
             }
 
-
-            /* ==========================
-               EVENTOS DOS INPUTS
-            ========================== */
-            document.getElementById("inputLogo")
-              .addEventListener("change", function () {
-                removerLogo = false;
-                previewImagem(this, "previewLogo");
-              });
-
-            document.getElementById("inputFavicon")
-              .addEventListener("change", function () {
-                removerFavicon = false;
-                previewImagem(this, "previewFavicon");
-              });
-
-            document.getElementById("btnRemoverLogo")
-              .addEventListener("click", () => marcarRemocao("logo"));
-
-            document.getElementById("btnRemoverFavicon")
-              .addEventListener("click", () => marcarRemocao("favicon"));
-
-
-            /* ==========================
-               AUTO LOAD
-            ========================== */
-            document.addEventListener("DOMContentLoaded", () => {
-              carregarConfiguracoesSite();
-            });
+            document.getElementById("inputLogo").addEventListener("change", function () { removerLogo = false; previewImagem(this, "previewLogo"); });
+            document.getElementById("inputFavicon").addEventListener("change", function () { removerFavicon = false; previewImagem(this, "previewFavicon"); });
+            document.getElementById("btnRemoverLogo").addEventListener("click", () => marcarRemocao("logo"));
+            document.getElementById("btnRemoverFavicon").addEventListener("click", () => marcarRemocao("favicon"));
+            document.addEventListener("DOMContentLoaded", () => { carregarConfiguracoesSite(); });
           </script>
-
-          <!-- ============================= -->
-          <!-- CARROSSEL HOME (ADMIN) -->
-          <!-- ============================= -->
 
           <div class="card">
             <div class="card-body">
-
               <div class="d-flex justify-content-between align-items-center mb-3">
                 <h5 class="mb-0">Carrossel da Página Home</h5>
-                <button class="btn btn-primary" onclick="adicionarSlide()">
-                  + Nova imagem
-                </button>
+                <button class="btn btn-primary" onclick="adicionarSlide()">+ Nova imagem</button>
               </div>
-
-              <!-- Lista de slides -->
               <div id="listaSlides" class="d-flex flex-column gap-3"></div>
-
-              <!-- Ações globais -->
               <div class="d-grid mt-4">
-                <button class="btn btn-primary" onclick="salvarImagensSite()">
-                  Salvar alterações
-                </button>
+                <button class="btn btn-primary" onclick="salvarImagensSite()">Salvar alterações</button>
               </div>
-
             </div>
           </div>
 
-
-          <!-- ============================= -->
-          <!-- TEMPLATE DO SLIDE -->
-          <!-- ============================= -->
           <template id="templateSlide">
-
             <div class="card slide-item border">
-
-              <!-- ID do banco -->
               <input type="hidden" class="input-id">
-
               <div class="card-body">
-
                 <div class="row g-3 align-items-center">
-
-                  <!-- PREVIEW + UPLOAD -->
                   <div class="col-md-3 text-center">
                     <img class="preview img-fluid rounded mb-2 border" style="max-height:120px; object-fit:cover;">
                     <input type="file" class="form-control input-imagem" accept="image/*">
                     <small class="text-muted">Nova imagem (opcional)</small>
                   </div>
-
-                  <!-- DADOS DO SLIDE -->
                   <div class="col-md-7">
-
-                    <input type="text" class="form-control mb-2 input-titulo"
-                      placeholder="Título exibido sobre a imagem">
-
+                    <input type="text" class="form-control mb-2 input-titulo" placeholder="Título exibido sobre a imagem">
                     <input type="text" class="form-control mb-2 input-descricao" placeholder="Descrição">
-
                     <input type="text" class="form-control mb-3 input-link" placeholder="Link ao clicar">
-
                     <div class="d-flex align-items-center gap-4">
-
                       <div class="form-check">
                         <input class="form-check-input input-ativo" type="checkbox" checked>
-                        <label class="form-check-label">
-                          Visível no site
-                        </label>
+                        <label class="form-check-label">Visível no site</label>
                       </div>
-
                       <div>
                         <label class="form-label mb-0">Ordem</label>
                         <input type="number" class="form-control input-ordem" value="0" style="width:90px;">
                       </div>
-
                     </div>
-
                   </div>
-
-                  <!-- AÇÕES -->
                   <div class="col-md-2">
-
                     <div class="d-grid gap-2">
-
-                      <button type="button" class="btn btn-outline-danger btn-remover">
-                        Excluir
-                      </button>
-
-                      <small class="text-muted text-center">
-                        Marcar para remover
-                      </small>
-
+                      <button type="button" class="btn btn-outline-danger btn-remover">Excluir</button>
+                      <small class="text-muted text-center">Marcar para remover</small>
                     </div>
-
                   </div>
-
                 </div>
-
               </div>
-
             </div>
-
           </template>
 
-
         </div>
-
       </div>
 
       <div class="painel-content" id="analise">
@@ -2068,76 +1577,47 @@ carregarBannersAdmin();
 
       <div class="painel-content" id="perfil">
         <div class="container mt-4" style="max-width:500px">
-
           <h3 class="mb-3">Dados do Administrador</h3>
-
           <div class="mb-3">
             <label class="form-label">Email</label>
             <input id="adminEmail" type="email" class="form-control">
           </div>
-
           <div class="mb-3">
             <label class="form-label">Nova senha</label>
             <input id="adminSenha" type="password" class="form-control">
           </div>
-
           <div class="mb-3">
             <label class="form-label">Confirmar nova senha</label>
             <input id="adminConfirmarSenha" type="password" class="form-control">
           </div>
-
-          <button class="btn btn-danger w-100" onclick="salvarAdmin()">
-            Atualizar dados
-          </button>
-
+          <button class="btn btn-danger w-100" onclick="salvarAdmin()">Atualizar dados</button>
         </div>
         <script>
           async function carregarAdmin() {
             try {
               const res = await fetch('/api/admin/usuario');
               const admin = await res.json();
-
               document.getElementById("adminEmail").value = admin.email || "";
-
-            } catch (erro) {
-              alert("Erro ao carregar dados do admin");
-            }
+            } catch (erro) { alert("Erro ao carregar dados do admin"); }
           }
 
           async function salvarAdmin() {
             const email = document.getElementById("adminEmail").value.trim();
             const senha = document.getElementById("adminSenha").value;
             const confirmar = document.getElementById("adminConfirmarSenha").value;
-
-            if (!email) {
-              alert("Informe o email");
-              return;
-            }
-
-            if (senha && senha !== confirmar) {
-              alert("As senhas não coincidem");
-              return;
-            }
-
+            if (!email) { alert("Informe o email"); return; }
+            if (senha && senha !== confirmar) { alert("As senhas não coincidem"); return; }
             try {
               const res = await fetch('/api/admin/usuario', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  email,
-                  senha // se vazio, backend ignora
-                })
+                body: JSON.stringify({ email, senha })
               });
-
               const dados = await res.json();
               alert(dados.message);
-
               document.getElementById("adminSenha").value = "";
               document.getElementById("adminConfirmarSenha").value = "";
-
-            } catch (erro) {
-              alert("Erro ao atualizar dados");
-            }
+            } catch (erro) { alert("Erro ao atualizar dados"); }
           }
 
           carregarAdmin();

@@ -38,6 +38,7 @@ const RotasTermosUso = require('./routes/rotas_paginas/termos_uso');
 const RotasPlanosParticular = require('./routes/rotas_paginas/planos-particular');
 const RotasPlanosRevenda = require('./routes/rotas_paginas/planos-revenda');
 const RotasVeiculos = require('./routes/rotas_paginas/veiculos');
+const RotasBairros = require('./routes/bairros'); // ← BAIRROS
 
 
 /* Rotas Admin */
@@ -163,6 +164,7 @@ app.use('/', RotasTermosUso);
 app.use('/', RotasPlanosParticular);
 app.use('/', RotasPlanosRevenda);
 app.use('/', RotasVeiculos);
+app.use('/', RotasBairros); // ← BAIRROS
 
 /* Rotas Admin */
 app.use('/', RotasDoAdminHome);

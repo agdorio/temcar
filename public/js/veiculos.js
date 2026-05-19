@@ -23,7 +23,11 @@ function capitalize(texto) {
 }
 
 // ===============================
-// BUSCAR VEÍCULOS DA API
+// CAPTURAR FILTRO DA URL
+// Suporta:
+//   /veiculos/:estado/:cidade/:bairro  ← NOVO
+//   /carros, /motos                    ← existentes
+//   ?marca=X, ?carroceria=X, ?busca=X  ← existentes
 // ===============================
 
 async function carregarVeiculos() {
@@ -36,12 +40,13 @@ async function carregarVeiculos() {
             params.set('tipo', tipoMap[filtro.tipo])
         }
 
-        if (filtro.cidade) params.set('cidade', filtro.cidade)
-        if (filtro.uf) params.set('uf', filtro.uf)
-        if (filtro.bairro) params.set('bairro', filtro.bairro)
-        if (query.get('marca')) params.set('marca', query.get('marca'))
+        if (filtro.cidade)  params.set('cidade', filtro.cidade)
+        if (filtro.uf)      params.set('uf', filtro.uf)
+        if (filtro.bairro)  params.set('bairro', filtro.bairro)   // ← NOVO
+
+        if (query.get('marca'))      params.set('marca', query.get('marca'))
         if (query.get('carroceria')) params.set('carroceria', query.get('carroceria'))
-        if (query.get('busca')) params.set('busca', query.get('busca'))
+        if (query.get('busca'))      params.set('busca', query.get('busca'))
 
         const resp = await fetch(`/api/veiculos?${params.toString()}`)
         if (!resp.ok) throw new Error("Erro ao buscar veículos")
@@ -80,8 +85,9 @@ function atualizarTitulos() {
     let sub = `Encontre os melhores ${(filtro.tipo || "veículos")} no Temcar`
 
     if (filtro.bairro) {
+        // ← NOVO: título com bairro
         titulo = `${tipoNome} em ${capitalize(filtro.bairro)}, ${capitalize(filtro.cidade)} - ${(filtro.uf || "").toUpperCase()}`
-        sub = `Ofertas de ${(filtro.tipo || "veículos")} perto de você`
+        sub = `Ofertas de ${(filtro.tipo || "veículos")} no seu bairro`
     } else if (filtro.cidade) {
         titulo = `${tipoNome} em ${capitalize(filtro.cidade)} - ${(filtro.uf || "").toUpperCase()}`
         sub = `Ofertas de ${(filtro.tipo || "veículos")} na sua cidade`
@@ -135,20 +141,12 @@ function renderizarLista() {
 
                 ${item.destaque == 1 ? `
                     <span style="
-                        position:absolute;
-                        top:10px;
-                        left:10px;
-                        background:#ffc107;
-                        color:#000;
-                        padding:5px 10px;
-                        border-radius:6px;
-                        font-size:12px;
-                        font-weight:bold;
-                        z-index:10;
-                    ">
+                        position:absolute;top:10px;left:10px;
+                        background:#ffc107;color:#000;
+                        padding:5px 10px;border-radius:6px;
+                        font-size:12px;font-weight:bold;z-index:10;">
                         ⭐ Destaque
-                    </span>
-                ` : ''}
+                    </span>` : ''}
 
                 <img
                   src="${item.imagem ? '/uploads/anuncios/' + item.imagem : '/img/sem-foto.jpg'}"
@@ -187,6 +185,7 @@ function renderizarLista() {
                   <p class="small mb-0">
                     <i class="bi bi-geo-alt-fill" style="color:#C90B0C;"></i>
                     ${item.cidade || ''} - ${item.estado || ''}
+                    ${item.bairro ? ' · ' + item.bairro : ''}
                   </p>
                 </div>
             </div>
@@ -249,7 +248,6 @@ async function carregarBanners() {
     try {
         const resp = await fetch('/api/banners')
         if (!resp.ok) return
-
         const banners = await resp.json()
         if (!banners.length) return
 
@@ -277,18 +275,9 @@ async function carregarBanners() {
             slidesPerView: 1.3,
             spaceBetween: 15,
             speed: 800,
-            autoplay: {
-                delay: 4000,
-                disableOnInteraction: false,
-                pauseOnMouseEnter: true
-            },
-            navigation: {
-                nextEl: ".swiper-button-next",
-                prevEl: ".swiper-button-prev"
-            },
-            breakpoints: {
-                768: { slidesPerView: 1.5 }
-            }
+            autoplay: { delay: 4000, disableOnInteraction: false, pauseOnMouseEnter: true },
+            navigation: { nextEl: ".swiper-button-next", prevEl: ".swiper-button-prev" },
+            breakpoints: { 768: { slidesPerView: 1.5 } }
         })
     } catch (e) {
         console.error("Erro ao carregar banners:", e)
